@@ -20,7 +20,13 @@ package org.apache.ibatis.scripting.xmltags;
  */
 public class IfSqlNode implements SqlNode {
   private final ExpressionEvaluator evaluator;
+  /**
+   * 判断表达式
+   */
   private final String test;
+  /**
+   * 内嵌的 SqlNode 节点
+   */
   private final SqlNode contents;
 
   public IfSqlNode(SqlNode contents, String test) {
@@ -29,13 +35,17 @@ public class IfSqlNode implements SqlNode {
     this.evaluator = new ExpressionEvaluator();
   }
 
+  /**
+   * 用来构造节点内的SQL语句
+   */
   @Override
   public boolean apply(DynamicContext context) {
+    // <1> 判断是否符合条件
     if (evaluator.evaluateBoolean(test, context.getBindings())) {
+      // <2> 符合，执行 contents 的应用
       contents.apply(context);
       return true;
     }
     return false;
   }
-
 }

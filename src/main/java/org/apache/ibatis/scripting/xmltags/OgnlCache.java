@@ -34,6 +34,11 @@ public final class OgnlCache {
 
   private static final OgnlMemberAccess MEMBER_ACCESS = new OgnlMemberAccess();
   private static final OgnlClassResolver CLASS_RESOLVER = new OgnlClassResolver();
+  /**
+   * 表达式的缓存的映射
+   * KEY：表达式
+   * VALUE：表达式的缓存
+   */
   private static final Map<String, Object> expressionCache = new ConcurrentHashMap<>();
 
   private OgnlCache() {
@@ -42,7 +47,10 @@ public final class OgnlCache {
 
   public static Object getValue(String expression, Object root) {
     try {
+      // <1> 创建 OGNL Context 对象
       Map context = Ognl.createDefaultContext(root, MEMBER_ACCESS, CLASS_RESOLVER, null);
+      // <2> 解析表达式 parseExpression
+      // <3> 获得表达式对应的值
       return Ognl.getValue(parseExpression(expression), context, root);
     } catch (OgnlException e) {
       throw new BuilderException("Error evaluating expression '" + expression + "'. Cause: " + e, e);
@@ -50,9 +58,13 @@ public final class OgnlCache {
   }
 
   private static Object parseExpression(String expression) throws OgnlException {
+    // 从缓存获取
     Object node = expressionCache.get(expression);
+    // 没有缓存
     if (node == null) {
+      // 解析
       node = Ognl.parseExpression(expression);
+      // 放入缓存
       expressionCache.put(expression, node);
     }
     return node;
