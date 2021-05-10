@@ -45,6 +45,10 @@ import org.xml.sax.SAXParseException;
  * @author Kazuki Shimizu
  *
  * 基于 Java XPath 解析器，用于解析 MyBatis mybatis-config.xml 和 **Mapper.xml 等 XML 配置文件
+ *
+ * 解析器模块，主要提供了两个功能:
+ * 1、对 XPath 进行封装，为 MyBatis 初始化时解析 mybatis-config.xml 配置文件以及映射配置文件提供支持。
+ * 2、为处理动态 SQL 语句中的占位符提供支持
  */
 public class XPathParser {
 
