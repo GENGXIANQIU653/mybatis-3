@@ -20,18 +20,23 @@ import java.util.List;
 import org.apache.ibatis.annotations.Select;
 
 public interface AutoConstructorMapper {
+
+  // ========== PrimitiveSubject ==========
   @Select("SELECT * FROM subject WHERE id = #{id}")
   PrimitiveSubject getSubject(final int id);
 
   @Select("SELECT * FROM subject")
   List<PrimitiveSubject> getSubjects();
 
+  // ========== AnnotatedSubject ==========
   @Select("SELECT * FROM subject")
   List<AnnotatedSubject> getAnnotatedSubjects();
 
+  // ========== BadSubject ==========
   @Select("SELECT * FROM subject")
   List<BadSubject> getBadSubjects();
 
+  // ========== ExtensiveSubject ==========
   @Select("SELECT * FROM extensive_subject")
   List<ExtensiveSubject> getExtensiveSubjects();
 }
