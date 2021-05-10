@@ -207,9 +207,11 @@ public class XPathParser {
   public String evalString(Object root, String expression) {
 
     // <1> 获得值
+    // 其中，returnType 方法传入的是 XPathConstants.STRING ，表示返回的值是 String 类型
     String result = (String) evaluate(expression, root, XPathConstants.STRING);
 
     // <2> 基于 variables 替换动态值，如果 result 为动态值
+    // 这就是 MyBatis 如何替换掉 XML 中的动态值实现的方式
     result = PropertyParser.parse(result, variables);
     return result;
   }
@@ -262,14 +264,25 @@ public class XPathParser {
     return (Double) evaluate(expression, root, XPathConstants.NUMBER);
   }
 
+  /**
+   * 用于获得 Node 类型的节点的值
+   * @param expression
+   * @return
+   */
   public List<XNode> evalNodes(String expression) {
     return evalNodes(document, expression);
   }
 
   public List<XNode> evalNodes(Object root, String expression) {
     List<XNode> xnodes = new ArrayList<>();
+    /**
+     * <1> 获得 Node 数组
+     */
     NodeList nodes = (NodeList) evaluate(expression, root, XPathConstants.NODESET);
     for (int i = 0; i < nodes.getLength(); i++) {
+      /**
+       * <2> 封装成 XNode 数组
+       */
       xnodes.add(new XNode(this, nodes.item(i), variables));
     }
     return xnodes;
