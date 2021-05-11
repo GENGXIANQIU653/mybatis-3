@@ -39,7 +39,15 @@ public class XNode {
   private final Properties variables;
   private final XPathParser xpathParser;
 
-  public XNode(XPathParser xpathParser, Node node, Properties variables) {
+  /**
+   * 构造node对象
+   * @param xpathParser
+   * @param node
+   * @param variables
+   */
+  public XNode(XPathParser xpathParser,
+               Node node,
+               Properties variables) {
     this.xpathParser = xpathParser;
     this.node = node;
     this.name = node.getNodeName();

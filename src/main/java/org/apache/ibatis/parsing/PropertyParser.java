@@ -54,6 +54,8 @@ public class PropertyParser {
 
 
   /**
+   *
+   * PropertyParser.parse 静态方法
    * 基于 variables 变量，替换 string 字符串中的动态属性，并返回结果
    * @param string
    * @param variables
@@ -79,9 +81,33 @@ public class PropertyParser {
     return parser.parse(string);
   }
 
+  /**
+   * VariableTokenHandler ，是 PropertyParser 的内部静态类，变量 Token 处理器
+   */
   private static class VariableTokenHandler implements TokenHandler {
+
+    /**
+     * 变量 Properties 对象
+     */
     private final Properties variables;
+
+    /**
+     * 是否开启默认值功能。默认为 {@link #ENABLE_DEFAULT_VALUE}
+     *
+     * 想要开启，可以配置如下：
+     * <properties resource="org/mybatis/example/config.properties">
+     *   <property name="org.apache.ibatis.parsing.PropertyParser.enable-default-value" value="true"/>
+     * </properties>
+     */
     private final boolean enableDefaultValue;
+
+    /**
+     * 默认值的分隔符。默认为 {@link #KEY_DEFAULT_VALUE_SEPARATOR} ，即 ":" 。
+     * 想要修改，可以配置如下
+     * <properties resource="org/mybatis/example/config.properties">
+     *   <property name="org.apache.ibatis.parsing.PropertyParser.default-value-separator" value="?:"/>
+     * </properties>
+     */
     private final String defaultValueSeparator;
 
     private VariableTokenHandler(Properties variables) {
@@ -94,25 +120,38 @@ public class PropertyParser {
       return (variables == null) ? defaultValue : variables.getProperty(key, defaultValue);
     }
 
+    /**
+     *
+     * @param content Token 字符串
+     * @return
+     */
     @Override
     public String handleToken(String content) {
       if (variables != null) {
         String key = content;
+
+        // 开启默认值功能
         if (enableDefaultValue) {
+
+          // 查找默认值
           final int separatorIndex = content.indexOf(defaultValueSeparator);
           String defaultValue = null;
           if (separatorIndex >= 0) {
             key = content.substring(0, separatorIndex);
             defaultValue = content.substring(separatorIndex + defaultValueSeparator.length());
           }
+          // 有默认值，优先替换，不存在则返回默认值
           if (defaultValue != null) {
             return variables.getProperty(key, defaultValue);
           }
         }
+        // 未开启默认值功能，直接替换
         if (variables.containsKey(key)) {
           return variables.getProperty(key);
         }
       }
+
+      // 无 variables ，直接返回
       return "${" + content + "}";
     }
   }

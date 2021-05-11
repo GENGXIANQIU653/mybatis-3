@@ -66,7 +66,12 @@ public class XMLConfigBuilder extends BaseBuilder {
     this(reader, environment, null);
   }
 
+
   public XMLConfigBuilder(Reader reader, String environment, Properties props) {
+
+    /**
+     * XPathParser
+     */
     this(new XPathParser(reader, true, props, new XMLMapperEntityResolver()),
       environment,
       props);
@@ -98,6 +103,15 @@ public class XMLConfigBuilder extends BaseBuilder {
       throw new BuilderException("Each XMLConfigBuilder can only be used once.");
     }
     parsed = true;
+
+    /**
+     * XPathParser 提供了一系列的 #eval* 方法，用于获得 Boolean、Short、Integer、Long、Float、Double、String、Node 类型的元素或节点的“值”
+     *
+     * 此处是eval节点
+     * 用于获得 Node 类型的节点的值
+     *
+     * mybatis-config.xml 中 "configuration"
+     */
     parseConfiguration(parser.evalNode("/configuration"));
     return configuration;
   }

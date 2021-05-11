@@ -292,15 +292,29 @@ public class XPathParser {
     return xnodes;
   }
 
+  /**
+   * Node 对象
+   * @param expression
+   * @return
+   */
   public XNode evalNode(String expression) {
     return evalNode(document, expression);
   }
 
+  /**
+   * Node 对象
+   * @param root
+   * @param expression
+   * @return
+   */
   public XNode evalNode(Object root, String expression) {
+    // <1> 获得 Node 对象
     Node node = (Node) evaluate(expression, root, XPathConstants.NODE);
     if (node == null) {
       return null;
     }
+
+    // <2> 封装成 XNode 对象
     return new XNode(this, node, variables);
   }
 

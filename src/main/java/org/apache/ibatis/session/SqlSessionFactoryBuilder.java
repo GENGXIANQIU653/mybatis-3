@@ -32,6 +32,11 @@ import org.apache.ibatis.session.defaults.DefaultSqlSessionFactory;
  */
 public class SqlSessionFactoryBuilder {
 
+  /**
+   * 入口
+   * @param reader
+   * @return
+   */
   public SqlSessionFactory build(Reader reader) {
     return build(reader, null, null);
   }
@@ -44,9 +49,26 @@ public class SqlSessionFactoryBuilder {
     return build(reader, null, properties);
   }
 
+  /**
+   * 入口2
+   * @param reader
+   * @param environment
+   * @param properties
+   * @return
+   */
   public SqlSessionFactory build(Reader reader, String environment, Properties properties) {
     try {
+
+      /**
+       * XPathParser
+       *
+       */
       XMLConfigBuilder parser = new XMLConfigBuilder(reader, environment, properties);
+
+      /**
+       * <1> parser.parse()
+       * <2> build
+       */
       return build(parser.parse());
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error building SqlSession.", e);
