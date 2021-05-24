@@ -19,6 +19,8 @@ import java.util.Iterator;
 
 /**
  * @author Clinton Begin
+ *
+ * 实现 Iterator 接口，属性分词器，支持迭代器的访问方式
  */
 public class PropertyTokenizer implements Iterator<PropertyTokenizer> {
   private String name;

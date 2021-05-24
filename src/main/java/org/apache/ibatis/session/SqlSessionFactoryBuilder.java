@@ -61,13 +61,13 @@ public class SqlSessionFactoryBuilder {
 
       /**
        * XPathParser
-       *
+       * <1> 创建 XMLConfigBuilder 对象
        */
       XMLConfigBuilder parser = new XMLConfigBuilder(reader, environment, properties);
 
       /**
-       * <1> parser.parse()
-       * <2> build
+       * <2> parser.parse() -> 执行 XML 解析,调用 XMLConfigBuilder#parse() 方法，执行 XML 解析，返回 Configuration 对象
+       * <3> build -> 创建 DefaultSqlSessionFactory 对象
        */
       return build(parser.parse());
     } catch (Exception e) {

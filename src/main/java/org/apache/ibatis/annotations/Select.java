@@ -39,6 +39,7 @@ import java.lang.annotation.Target;
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
+// 方法
 @Target(ElementType.METHOD)
 @Repeatable(Select.List.class)
 public @interface Select {
@@ -46,6 +47,8 @@ public @interface Select {
    * Returns an SQL for retrieving record(s).
    *
    * @return an SQL for retrieving record(s)
+   *
+   * 查询语句
    */
   String[] value();
 

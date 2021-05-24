@@ -35,19 +35,43 @@ import org.apache.ibatis.logging.LogFactory;
  * This is a simple, synchronous, thread-safe database connection pool.
  *
  * @author Clinton Begin
+ *
+ * 实现 DataSource 接口，池化的 DataSource 实现类
+ * 实际场景下，我们基本不用 MyBatis 自带的数据库连接池的实现。所以，本文更多的目的，是让胖友们对数据库连接池的实现，有个大体的理解
  */
 public class PooledDataSource implements DataSource {
 
   private static final Log log = LogFactory.getLog(PooledDataSource.class);
 
+  /**
+   * PoolState 对象，记录池化的状态
+   */
   private final PoolState state = new PoolState(this);
 
+  /**
+   * UnpooledDataSource 对象
+   */
   private final UnpooledDataSource dataSource;
 
   // OPTIONAL CONFIGURATION FIELDS
+  /**
+   * 在任意时间可以存在的活动（也就是正在使用）连接数量
+   */
   protected int poolMaximumActiveConnections = 10;
+
+  /**
+   * 任意时间可能存在的空闲连接数
+   */
   protected int poolMaximumIdleConnections = 5;
+
+  /**
+   * 在被强制返回之前，池中连接被检出（checked out）时间。单位：毫秒
+   */
   protected int poolMaximumCheckoutTime = 20000;
+
+  /**
+   * 这是一个底层设置，如果获取连接花费了相当长的时间，连接池会打印状态日志并重新尝试获取一个连接（避免在误配置的情况下一直安静的失败）。单位：毫秒
+   */
   protected int poolTimeToWait = 20000;
   protected int poolMaximumLocalBadConnectionTolerance = 3;
   protected String poolPingQuery = "NO PING QUERY SET";
@@ -86,6 +110,13 @@ public class PooledDataSource implements DataSource {
 
   @Override
   public Connection getConnection() throws SQLException {
+
+    /**
+     * 获取 org.apache.ibatis.datasource.pooled.PooledConnection 对象，这是一个池化的连接。非常关键的一个方法
+     *
+     * 调用 PooledConnection#getProxyConnection() 方法，返回代理的 Connection 对象。
+     * 这样，每次对数据库的操作，才能被 PooledConnection 的 「5.2 invoke」 代理拦截
+     */
     return popConnection(dataSource.getUsername(), dataSource.getPassword()).getProxyConnection();
   }
 

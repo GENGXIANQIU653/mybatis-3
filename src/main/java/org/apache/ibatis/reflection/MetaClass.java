@@ -28,35 +28,64 @@ import org.apache.ibatis.reflection.property.PropertyTokenizer;
 
 /**
  * @author Clinton Begin
+ *
+ * 类的元数据，基于 Reflector 和 PropertyTokenizer ，提供对指定类的各种骚操作
  */
 public class MetaClass {
 
   private final ReflectorFactory reflectorFactory;
   private final Reflector reflector;
 
+  /**
+   * 通过构造方法，我们可以看出，一个 MetaClass 对象，对应一个 Class 对象
+   * @param type
+   * @param reflectorFactory
+   */
   private MetaClass(Class<?> type, ReflectorFactory reflectorFactory) {
     this.reflectorFactory = reflectorFactory;
     this.reflector = reflectorFactory.findForClass(type);
   }
 
+  /**
+   * 创建指定类的 MetaClass 对象
+   * @param type
+   * @param reflectorFactory
+   * @return
+   */
   public static MetaClass forClass(Class<?> type, ReflectorFactory reflectorFactory) {
     return new MetaClass(type, reflectorFactory);
   }
 
+  /**
+   * 创建类的指定属性类的 MetaClass 对象
+   * @param name
+   * @return
+   */
   public MetaClass metaClassForProperty(String name) {
+    // 获得属性的类
     Class<?> propType = reflector.getGetterType(name);
+    // 创建 MetaClass 对象
     return MetaClass.forClass(propType, reflectorFactory);
   }
 
   public String findProperty(String name) {
+    // <3> 构建属性
     StringBuilder prop = buildProperty(name, new StringBuilder());
     return prop.length() > 0 ? prop.toString() : null;
   }
 
+  /**
+   * 根据表达式，获得属性
+   * @param name
+   * @param useCamelCaseMapping
+   * @return
+   */
   public String findProperty(String name, boolean useCamelCaseMapping) {
+    // <1> 下划线转驼峰
     if (useCamelCaseMapping) {
       name = name.replace("_", "");
     }
+    // <2> 获得属性
     return findProperty(name);
   }
 
@@ -88,12 +117,25 @@ public class MetaClass {
     return getGetterType(prop);
   }
 
+  /**
+   * 创建 MetaClass 对象
+   * @param prop
+   * @return
+   */
   private MetaClass metaClassForProperty(PropertyTokenizer prop) {
+    // 【调用】获得 getting 方法返回的类型
     Class<?> propType = getGetterType(prop);
+    // 创建 MetaClass 对象
     return MetaClass.forClass(propType, reflectorFactory);
   }
 
+  /**
+   * 获得 getting 方法返回的类型
+   * @param prop
+   * @return
+   */
   private Class<?> getGetterType(PropertyTokenizer prop) {
+    // 获得返回类型
     Class<?> type = reflector.getGetterType(prop.getName());
     if (prop.getIndex() != null && Collection.class.isAssignableFrom(type)) {
       Type returnType = getGenericGetterType(prop.getName());
@@ -146,8 +188,15 @@ public class MetaClass {
     }
   }
 
+  /**
+   * 判断指定属性是否有 getting 方法
+   * @param name
+   * @return
+   */
   public boolean hasGetter(String name) {
+    // 创建 PropertyTokenizer 对象，对 name 进行分词
     PropertyTokenizer prop = new PropertyTokenizer(name);
+    // 有子表达式
     if (prop.hasNext()) {
       if (reflector.hasGetter(prop.getName())) {
         MetaClass metaProp = metaClassForProperty(prop);
@@ -155,7 +204,9 @@ public class MetaClass {
       } else {
         return false;
       }
-    } else {
+    }
+    // 无子表达式
+    else {
       return reflector.hasGetter(prop.getName());
     }
   }
@@ -168,17 +219,32 @@ public class MetaClass {
     return reflector.getSetInvoker(name);
   }
 
+  /**
+   * 构建属性
+   * @param name
+   * @param builder
+   * @return
+   */
   private StringBuilder buildProperty(String name, StringBuilder builder) {
+    // 创建 PropertyTokenizer 对象，对 name 进行分词
     PropertyTokenizer prop = new PropertyTokenizer(name);
+    // 有子表达式
     if (prop.hasNext()) {
+      // <4> 获得属性名，并添加到 builder 中
       String propertyName = reflector.findPropertyName(prop.getName());
       if (propertyName != null) {
+        // 拼接属性到 builder 中
         builder.append(propertyName);
         builder.append(".");
+        // 创建 MetaClass 对象
         MetaClass metaProp = metaClassForProperty(propertyName);
+        // 递归解析子表达式 children ，并将结果添加到 builder 中
         metaProp.buildProperty(prop.getChildren(), builder);
       }
-    } else {
+    }
+    // 无子表达式
+    else {
+      // <4> 获得属性名，并添加到 builder 中
       String propertyName = reflector.findPropertyName(name);
       if (propertyName != null) {
         builder.append(propertyName);

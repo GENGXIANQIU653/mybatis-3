@@ -31,6 +31,9 @@ class ReflectorTest {
 
   @Test
   void testGetSetterType() {
+    /**
+     * 无参构造函数
+     */
     ReflectorFactory reflectorFactory = new DefaultReflectorFactory();
     Reflector reflector = reflectorFactory.findForClass(Section.class);
     Assertions.assertEquals(Long.class, reflector.getSetterType("id"));
