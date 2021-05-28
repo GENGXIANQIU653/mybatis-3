@@ -30,6 +30,8 @@ import org.apache.ibatis.session.Configuration;
 
 /**
  * @author Clinton Begin
+ *
+ * 映射的语句，每个 <select />、<insert />、<update />、<delete /> 对应一个 MappedStatement 对象
  */
 public final class MappedStatement {
 
@@ -42,6 +44,10 @@ public final class MappedStatement {
   private ResultSetType resultSetType;
   private SqlSource sqlSource;
   private Cache cache;
+
+  /**
+   * 参数集合，对应 paramType="" 或 paramMap="" 标签属性
+   */
   private ParameterMap parameterMap;
   private List<ResultMap> resultMaps;
   private boolean flushCacheRequired;

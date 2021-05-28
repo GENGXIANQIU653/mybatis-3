@@ -219,6 +219,7 @@ public class XMLMapperBuilder extends BaseBuilder {
       try {
         statementParser.parseStatementNode();
       } catch (IncompleteElementException e) {
+        // <2> 解析失败，添加到 configuration 中
         configuration.addIncompleteStatement(statementParser);
       }
     }
