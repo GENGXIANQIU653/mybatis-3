@@ -849,6 +849,11 @@ public class Configuration {
     mapperRegistry.addMappers(packageName);
   }
 
+  /**
+   * addMapper
+   * @param type
+   * @param <T>
+   */
   public <T> void addMapper(Class<T> type) {
     mapperRegistry.addMapper(type);
   }

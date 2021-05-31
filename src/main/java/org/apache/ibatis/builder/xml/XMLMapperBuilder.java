@@ -678,7 +678,10 @@ public class XMLMapperBuilder extends BaseBuilder {
         // <3> 标记 namespace 已经添加，避免 MapperAnnotationBuilder#loadXmlResource(...) 重复加载
         configuration.addLoadedResource("namespace:" + namespace);
 
-        // <4> 添加到 configuration 中
+        /**
+         * <4> 添加到 configuration 中
+         * 加载注解配置
+         */
         configuration.addMapper(boundType);
       }
     }

@@ -57,21 +57,36 @@ public class MapperRegistry {
     return knownMappers.containsKey(type);
   }
 
+
+  /**
+   *
+   * @param type
+   * @param <T>
+   */
   public <T> void addMapper(Class<T> type) {
+
+    // 判断，必须是接口
     if (type.isInterface()) {
+      // 已经添加过，则抛出 BindingException 异常
       if (hasMapper(type)) {
         throw new BindingException("Type " + type + " is already known to the MapperRegistry.");
       }
       boolean loadCompleted = false;
       try {
+        // 添加到 knownMappers 中
         knownMappers.put(type, new MapperProxyFactory<>(type));
-        // It's important that the type is added before the parser is run
-        // otherwise the binding may automatically be attempted by the
-        // mapper parser. If the type is already known, it won't try.
+
+        /**
+         * 【解析 Mapper 的注解配置】
+         * MapperAnnotationBuilder -- Mapper 注解构造器，负责解析 Mapper 接口上的注解
+         */
         MapperAnnotationBuilder parser = new MapperAnnotationBuilder(config, type);
         parser.parse();
+
+        // 标记加载完成
         loadCompleted = true;
       } finally {
+        // 若加载未完成，从 knownMappers 中移除
         if (!loadCompleted) {
           knownMappers.remove(type);
         }
