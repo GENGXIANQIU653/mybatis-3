@@ -132,7 +132,10 @@ public class XMLStatementBuilder extends BaseBuilder {
           ? Jdbc3KeyGenerator.INSTANCE : NoKeyGenerator.INSTANCE;
     }
 
-    // <12> 创建 SqlSource
+    /**
+     * <12> 创建 SqlSource
+     * 【核心】--> XMLScriptBuilder
+     */
     SqlSource sqlSource = langDriver.createSqlSource(configuration, context, parameterTypeClass);
 
     // <7> 获得 statementType 对应的枚举值

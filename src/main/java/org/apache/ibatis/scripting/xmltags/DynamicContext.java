@@ -28,6 +28,8 @@ import org.apache.ibatis.session.Configuration;
 
 /**
  * @author Clinton Begin
+ *
+ * 动态 SQL ，用于每次执行 SQL 操作时，记录动态 SQL 处理后的最终 SQL 字符串
  */
 public class DynamicContext {
 
@@ -35,21 +37,43 @@ public class DynamicContext {
   public static final String DATABASE_ID_KEY = "_databaseId";
 
   static {
+    // <1.2> 设置 OGNL 的属性访问器
     OgnlRuntime.setPropertyAccessor(ContextMap.class, new ContextAccessor());
   }
 
+  /**
+   * 上下文的参数集合
+   */
   private final ContextMap bindings;
+
+  /**
+   * 生成后的 SQL
+   */
   private final StringJoiner sqlBuilder = new StringJoiner(" ");
+
+  /**
+   * 唯一编号。在 ForEachHandler 中使用
+   */
   private int uniqueNumber = 0;
 
+  /**
+   * 当需要使用到 OGNL 表达式时，parameterObject 非空
+   * @param configuration
+   * @param parameterObject
+   */
   public DynamicContext(Configuration configuration, Object parameterObject) {
+
+    // <1> 初始化 bindings 参数
     if (parameterObject != null && !(parameterObject instanceof Map)) {
+      // <1.1>
       MetaObject metaObject = configuration.newMetaObject(parameterObject);
       boolean existsTypeHandler = configuration.getTypeHandlerRegistry().hasTypeHandler(parameterObject.getClass());
       bindings = new ContextMap(metaObject, existsTypeHandler);
     } else {
       bindings = new ContextMap(null, false);
     }
+
+    // <2> 添加 bindings 的默认值
     bindings.put(PARAMETER_OBJECT_KEY, parameterObject);
     bindings.put(DATABASE_ID_KEY, configuration.getDatabaseId());
   }
@@ -62,21 +86,42 @@ public class DynamicContext {
     bindings.put(name, value);
   }
 
+  /**
+   * sqlBuilder 属性相关的方法
+   * @param sql
+   */
   public void appendSql(String sql) {
     sqlBuilder.add(sql);
   }
 
+  /**
+   * sqlBuilder 属性相关的方法
+   * @return
+   */
   public String getSql() {
     return sqlBuilder.toString().trim();
   }
 
+  /**
+   * uniqueNumber 属性相关的方法
+   * @return
+   */
   public int getUniqueNumber() {
     return uniqueNumber++;
   }
 
+  /**
+   * ContextMap ，是 DynamicContext 的内部静态类，继承 HashMap 类，上下文的参数集合
+   */
   static class ContextMap extends HashMap<String, Object> {
+
     private static final long serialVersionUID = 2977601501966151582L;
+
+    /**
+     * parameter 对应的 MetaObject 对象
+     */
     private final MetaObject parameterMetaObject;
+
     private final boolean fallbackParameterObject;
 
     public ContextMap(MetaObject parameterMetaObject, boolean fallbackParameterObject) {
@@ -104,17 +149,23 @@ public class DynamicContext {
     }
   }
 
+  /**
+   * ContextAccessor ，是 DynamicContext 的内部静态类，实现 ognl.PropertyAccessor 接口，上下文访问器
+   */
   static class ContextAccessor implements PropertyAccessor {
 
     @Override
     public Object getProperty(Map context, Object target, Object name) {
+
       Map map = (Map) target;
 
+      // 优先从 ContextMap 中，获得属性
       Object result = map.get(name);
       if (map.containsKey(name) || result != null) {
         return result;
       }
 
+      // <x> 如果没有，则从 PARAMETER_OBJECT_KEY 对应的 Map 中，获得属性
       Object parameterObject = map.get(PARAMETER_OBJECT_KEY);
       if (parameterObject instanceof Map) {
         return ((Map)parameterObject).get(name);

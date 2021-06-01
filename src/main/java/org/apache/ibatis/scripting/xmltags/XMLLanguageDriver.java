@@ -45,12 +45,19 @@ public class XMLLanguageDriver implements LanguageDriver {
   public SqlSource createSqlSource(Configuration configuration, XNode script, Class<?> parameterType) {
     // 创建 XMLScriptBuilder 对象，执行解析
     XMLScriptBuilder builder = new XMLScriptBuilder(configuration, script, parameterType);
+    // 解析SQL
     return builder.parseScriptNode();
   }
 
   @Override
   public SqlSource createSqlSource(Configuration configuration, String script, Class<?> parameterType) {
-    // <1> 如果是 <script> 开头，使用 XML 配置的方式，使用动态 SQL
+    /**
+     * 下面是用<script>的方式把它照搬过来，用注解来实现。适用于xml配置转换到注解配置，形如：
+     * @Select("<script>select * from user <if test=\"id !=null \">where id = #{id} </if></script>")
+     * public List<User> findUserById(User user);
+     *
+     * <1> 如果是 <script> 开头，使用 XML 配置的方式，使用动态 SQL
+     */
     if (script.startsWith("<script>")) {
       // <1.1> 创建 XPathParser 对象，解析出 <script /> 节点
       XPathParser parser = new XPathParser(script, false, configuration.getVariables(), new XMLMapperEntityResolver());
