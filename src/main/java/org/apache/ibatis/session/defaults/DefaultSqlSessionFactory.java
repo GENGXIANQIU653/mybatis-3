@@ -33,17 +33,29 @@ import org.apache.ibatis.transaction.managed.ManagedTransactionFactory;
 
 /**
  * @author Clinton Begin
+ * 实现 SqlSessionFactory 接口，默认的 SqlSessionFactory 实现类
  */
 public class DefaultSqlSessionFactory implements SqlSessionFactory {
 
+  /**
+   * configuration 对象
+   */
   private final Configuration configuration;
 
   public DefaultSqlSessionFactory(Configuration configuration) {
     this.configuration = configuration;
   }
 
+  /**
+   * 调用 #openSessionFromDataSource() 方法，获得 SqlSession 对象
+   * @return
+   */
   @Override
   public SqlSession openSession() {
+
+    /**
+     * 调用 #openSessionFromDataSource() 方法，获得 SqlSession 对象
+     */
     return openSessionFromDataSource(configuration.getDefaultExecutorType(), null, false);
   }
 
@@ -72,6 +84,11 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
     return openSessionFromDataSource(execType, null, autoCommit);
   }
 
+  /**
+   *
+   * @param connection
+   * @return
+   */
   @Override
   public SqlSession openSession(Connection connection) {
     return openSessionFromConnection(configuration.getDefaultExecutorType(), connection);
@@ -82,42 +99,80 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
     return openSessionFromConnection(execType, connection);
   }
 
+  /**
+   * 返回configuration 对象
+   * @return
+   */
   @Override
   public Configuration getConfiguration() {
     return configuration;
   }
 
+
+  /**
+   * 获得 SqlSession 对象
+   * @param execType
+   * @param level
+   * @param autoCommit
+   * @return
+   */
   private SqlSession openSessionFromDataSource(ExecutorType execType, TransactionIsolationLevel level, boolean autoCommit) {
+
     Transaction tx = null;
+
     try {
+      // 获得 Environment 对象
       final Environment environment = configuration.getEnvironment();
+
+      // 创建 Transaction 对象
       final TransactionFactory transactionFactory = getTransactionFactoryFromEnvironment(environment);
       tx = transactionFactory.newTransaction(environment.getDataSource(), level, autoCommit);
+
+      // 创建 Executor 对象
       final Executor executor = configuration.newExecutor(tx, execType);
+
+      // 创建 DefaultSqlSession 对象
       return new DefaultSqlSession(configuration, executor, autoCommit);
+
     } catch (Exception e) {
-      closeTransaction(tx); // may have fetched a connection so lets call close()
+
+      // 如果发生异常，则关闭 Transaction 对象
+      closeTransaction(tx);
       throw ExceptionFactory.wrapException("Error opening session.  Cause: " + e, e);
+
     } finally {
       ErrorContext.instance().reset();
     }
   }
 
+  /**
+   * 获得 SqlSession 对象
+   * @param execType
+   * @param connection
+   * @return
+   */
   private SqlSession openSessionFromConnection(ExecutorType execType, Connection connection) {
     try {
+      // 获得是否可以自动提交
       boolean autoCommit;
       try {
         autoCommit = connection.getAutoCommit();
       } catch (SQLException e) {
-        // Failover to true, as most poor drivers
-        // or databases won't support transactions
         autoCommit = true;
       }
+      // 获得 Environment 对象
       final Environment environment = configuration.getEnvironment();
+
+      // 创建 Transaction 对象
       final TransactionFactory transactionFactory = getTransactionFactoryFromEnvironment(environment);
       final Transaction tx = transactionFactory.newTransaction(connection);
+
+      // 创建 Executor 对象
       final Executor executor = configuration.newExecutor(tx, execType);
+
+      // 创建 DefaultSqlSession 对象
       return new DefaultSqlSession(configuration, executor, autoCommit);
+
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error opening session.  Cause: " + e, e);
     } finally {
@@ -125,11 +180,21 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
     }
   }
 
+  /**
+   * 获得 TransactionFactory 对象
+   * @param environment
+   * @return
+   */
   private TransactionFactory getTransactionFactoryFromEnvironment(Environment environment) {
+
+    // 情况一，创建 ManagedTransactionFactory 对象
     if (environment == null || environment.getTransactionFactory() == null) {
       return new ManagedTransactionFactory();
     }
+
+    // 情况二，使用 `environment` 中的
     return environment.getTransactionFactory();
+
   }
 
   private void closeTransaction(Transaction tx) {

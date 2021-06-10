@@ -54,14 +54,31 @@ public class ParamNameResolver {
 
   private boolean hasParamAnnotation;
 
+  /**
+   * 获取参数列表
+   * @param config
+   * @param method
+   *
+   * 方法参数列表的解析过程，解析完毕后，可得到参数下标到参数名的映射关系，这些映射关系最终存储在 ParamNameResolver 的 names 成员变量中。
+   * 这些映射关系将会在后面的代码中被用到
+   */
   public ParamNameResolver(Configuration config, Method method) {
+
     this.useActualParamName = config.isUseActualParamName();
+
+    // 获取参数类型列表
     final Class<?>[] paramTypes = method.getParameterTypes();
+
+    // 获取参数注解
     final Annotation[][] paramAnnotations = method.getParameterAnnotations();
+
     final SortedMap<Integer, String> map = new TreeMap<>();
     int paramCount = paramAnnotations.length;
+
     // get names from @Param annotations
     for (int paramIndex = 0; paramIndex < paramCount; paramIndex++) {
+
+      // 检测当前的参数类型是否为 RowBounds 或 ResultHandler
       if (isSpecialParameter(paramTypes[paramIndex])) {
         // skip special parameters
         continue;
@@ -70,21 +87,42 @@ public class ParamNameResolver {
       for (Annotation annotation : paramAnnotations[paramIndex]) {
         if (annotation instanceof Param) {
           hasParamAnnotation = true;
+          // 获取 @Param 注解内容
           name = ((Param) annotation).value();
           break;
         }
       }
+
+      // name 为空，表明未给参数配置 @Param 注解
       if (name == null) {
         // @Param was not specified.
+        // 检测是否设置了 useActualParamName 全局配置
         if (useActualParamName) {
+          /**
+           * 通过反射获取参数名称。此种方式要求 JDK 版本为 1.8+，
+           * 且要求编译时加入 -parameters 参数，否则获取到的参数名
+           * 仍然是 arg1, arg2, ..., argN
+           */
           name = getActualParamName(method, paramIndex);
         }
+
         if (name == null) {
-          // use the parameter index as the name ("0", "1", ...)
-          // gcode issue #71
+          /**
+           * 使用 map.size() 返回值作为名称，思考一下为什么不这样写：
+           *   name = String.valueOf(paramIndex);
+           * 因为如果参数列表中包含 RowBounds 或 ResultHandler，这两个参数
+           * 会被忽略掉，这样将导致名称不连续。
+           *
+           * 比如参数列表 (int p1, int p2, RowBounds rb, int p3)
+           *  - 期望得到名称列表为 ["0", "1", "2"]
+           *  - 实际得到名称列表为 ["0", "1", "3"]
+           */
           name = String.valueOf(map.size());
         }
       }
+      /**
+       *  存储 paramIndex 到 name 的映射
+       */
       map.put(paramIndex, name);
     }
     names = Collections.unmodifiableSortedMap(map);
@@ -154,14 +192,20 @@ public class ParamNameResolver {
    */
   public static Object wrapToMapIfCollection(Object object, String actualParamName) {
     if (object instanceof Collection) {
+      // 如果是集合，则添加到 collection 中
       ParamMap<Object> map = new ParamMap<>();
       map.put("collection", object);
+
+      // 如果是 List ，则添加到 list 中
       if (object instanceof List) {
         map.put("list", object);
       }
+
       Optional.ofNullable(actualParamName).ifPresent(name -> map.put(name, object));
       return map;
     } else if (object != null && object.getClass().isArray()) {
+
+      // 如果是 Array ，则添加到 array 中
       ParamMap<Object> map = new ParamMap<>();
       map.put("array", object);
       Optional.ofNullable(actualParamName).ifPresent(name -> map.put(name, object));

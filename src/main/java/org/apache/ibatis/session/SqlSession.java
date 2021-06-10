@@ -28,6 +28,8 @@ import org.apache.ibatis.executor.BatchResult;
  * Through this interface you can execute commands, get mappers and manage transactions.
  *
  * @author Clinton Begin
+ *
+ * SQL Session 接口
  */
 public interface SqlSession extends Closeable {
 

@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2020 the original author or authors.
+ *    Copyright 2009-2021 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -152,9 +152,17 @@ public class Configuration {
   protected final TypeAliasRegistry typeAliasRegistry = new TypeAliasRegistry();
   protected final LanguageDriverRegistry languageRegistry = new LanguageDriverRegistry();
 
+
+  /**
+   * MappedStatement 映射
+   *
+   * KEY：`${namespace}.${id}`
+   */
   protected final Map<String, MappedStatement> mappedStatements = new StrictMap<MappedStatement>("Mapped Statements collection")
       .conflictMessageProducer((savedValue, targetValue) ->
           ". please check " + savedValue.getResource() + " and " + targetValue.getResource());
+
+
   protected final Map<String, Cache> caches = new StrictMap<>("Caches collection");
   protected final Map<String, ResultMap> resultMaps = new StrictMap<>("Result Maps collection");
   protected final Map<String, ParameterMap> parameterMaps = new StrictMap<>("Parameter Maps collection");
@@ -834,11 +842,23 @@ public class Configuration {
     return this.getMappedStatement(id, true);
   }
 
+
+  /**
+   * 获得 MappedStatement 对象
+   * @param id
+   * @param validateIncompleteStatements
+   * @return
+   */
   public MappedStatement getMappedStatement(String id, boolean validateIncompleteStatements) {
+
+    // 校验，保证所有 MappedStatement 已经构造完毕
     if (validateIncompleteStatements) {
       buildAllStatements();
     }
+
+    // 获取 MappedStatement 对象
     return mappedStatements.get(id);
+
   }
 
   public Map<String, XNode> getSqlFragments() {
@@ -866,7 +886,18 @@ public class Configuration {
     mapperRegistry.addMapper(type);
   }
 
+  /**
+   * getMapper
+   * @param type
+   * @param sqlSession
+   * @param <T>
+   * @return
+   */
   public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
+
+    /**
+     * MapperRegistry.getMapper 见detail
+     */
     return mapperRegistry.getMapper(type, sqlSession);
   }
 

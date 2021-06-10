@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2017 the original author or authors.
+ *    Copyright 2009-2021 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -24,11 +24,24 @@ import org.apache.ibatis.session.Configuration;
 
 /**
  * @author Clinton Begin
+ *
+ * 实现 SqlSource 接口，静态的 SqlSource 实现类
+ *
+ * StaticSqlSource 的静态，是相对于 DynamicSqlSource 和 RawSqlSource 来说呢。
+ * 实际上，StaticSqlSource.sql 属性，上面还是可能包括 ? 占位符
  */
 public class StaticSqlSource implements SqlSource {
 
+  /**
+   * 静态的 SQL
+   */
   private final String sql;
+
+  /**
+   * ParameterMapping 集合
+   */
   private final List<ParameterMapping> parameterMappings;
+
   private final Configuration configuration;
 
   public StaticSqlSource(Configuration configuration, String sql) {
@@ -43,6 +56,7 @@ public class StaticSqlSource implements SqlSource {
 
   @Override
   public BoundSql getBoundSql(Object parameterObject) {
+    // 创建 BoundSql 对象
     return new BoundSql(configuration, sql, parameterMappings, parameterObject);
   }
 

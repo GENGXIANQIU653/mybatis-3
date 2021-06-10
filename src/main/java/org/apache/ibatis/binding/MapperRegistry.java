@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2020 the original author or authors.
+ *    Copyright 2009-2021 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -40,13 +40,32 @@ public class MapperRegistry {
     this.config = config;
   }
 
+
+  /**
+   * getMapper - 创建代理对象
+   * @param type
+   * @param sqlSession
+   * @param <T>
+   * @return
+   *
+   * 说明：
+   * MyBatis 在解析配置文件的 <mappers> 节点的过程中，会调用 MapperRegistry 的 addMapper 方法，
+   * 将 Class 到 MapperProxyFactory 对象的映射关系存入到 knownMappers
+   */
   @SuppressWarnings("unchecked")
   public <T> T getMapper(Class<T> type, SqlSession sqlSession) {
+
+    // 从 knownMappers 中获取与 type 对应的 MapperProxyFactory
     final MapperProxyFactory<T> mapperProxyFactory = (MapperProxyFactory<T>) knownMappers.get(type);
+
     if (mapperProxyFactory == null) {
       throw new BindingException("Type " + type + " is not known to the MapperRegistry.");
     }
+
     try {
+      /**
+       * 创建代理对象，见detail
+       */
       return mapperProxyFactory.newInstance(sqlSession);
     } catch (Exception e) {
       throw new BindingException("Error getting mapper instance. Cause: " + e, e);
@@ -59,7 +78,7 @@ public class MapperRegistry {
 
 
   /**
-   *
+   * 添加关系
    * @param type
    * @param <T>
    */

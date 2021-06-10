@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2019 the original author or authors.
+ *    Copyright 2009-2021 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -29,6 +29,24 @@ import org.apache.ibatis.session.defaults.DefaultSqlSessionFactory;
  * Builds {@link SqlSession} instances.
  *
  * @author Clinton Begin
+ *
+ * SqlSessionFactory 构造器
+ * 提供了各种 build 的重载方法，核心的套路都是解析出 Configuration 配置对象，从而创建出 DefaultSqlSessionFactory 对象
+ *
+ *
+ * // 构建 SqlSessionFactory 对象
+ * Reader reader = Resources.getResourceAsReader("org/apache/ibatis/autoconstructor/mybatis-config.xml");
+ * SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(reader);
+ *
+ * // 获得 SqlSession 对象
+ * SqlSession sqlSession = sqlSessionFactory.openSession();
+ *
+ * // 获得 Mapper 对象
+ * final AutoConstructorMapper mapper = sqlSession.getMapper(AutoConstructorMapper.class);
+ *
+ * // 执行查询
+ * final Object subject = mapper.getSubject(1);
+ *
  */
 public class SqlSessionFactoryBuilder {
 
@@ -50,11 +68,11 @@ public class SqlSessionFactoryBuilder {
   }
 
   /**
-   * 入口2
-   * @param reader
-   * @param environment
-   * @param properties
-   * @return
+   * 入口2 - 构造 SqlSessionFactory 对象
+   * @param reader Reader 对象
+   * @param environment 环境
+   * @param properties Properties 变量
+   * @return SqlSessionFactory 对象
    */
   public SqlSessionFactory build(Reader reader, String environment, Properties properties) {
     try {
@@ -94,10 +112,23 @@ public class SqlSessionFactoryBuilder {
     return build(inputStream, null, properties);
   }
 
+  /**
+   * 构造 SqlSessionFactory 对象
+   * @param inputStream
+   * @param environment
+   * @param properties
+   * @return
+   */
   public SqlSessionFactory build(InputStream inputStream, String environment, Properties properties) {
+
     try {
+      // 1. 创建 XMLConfigBuilder 对象
       XMLConfigBuilder parser = new XMLConfigBuilder(inputStream, environment, properties);
+
+      // 2. 执行 XML 解析，返回 Configuration 对象
+      // 3. 创建 DefaultSqlSessionFactory 对象
       return build(parser.parse());
+
     } catch (Exception e) {
       throw ExceptionFactory.wrapException("Error building SqlSession.", e);
     } finally {
@@ -110,6 +141,12 @@ public class SqlSessionFactoryBuilder {
     }
   }
 
+  /**
+   * 创建 DefaultSqlSessionFactory 对象
+   *
+   * @param config Configuration 对象
+   * @return DefaultSqlSessionFactory 对象
+   */
   public SqlSessionFactory build(Configuration config) {
     return new DefaultSqlSessionFactory(config);
   }

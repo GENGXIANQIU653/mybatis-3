@@ -1,5 +1,5 @@
 /**
- *    Copyright 2009-2019 the original author or authors.
+ *    Copyright 2009-2021 the original author or authors.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -20,9 +20,16 @@ package org.apache.ibatis.mapping;
  * It creates the SQL that will be passed to the database out of the input parameter received from the user.
  *
  * @author Clinton Begin
+ *
+ * SQL 来源接口。它代表从 Mapper XML 或方法注解上，读取的一条 SQL 内容
  */
 public interface SqlSource {
 
+  /**
+   * 根据传入的参数对象，返回 BoundSql 对象
+   * @param parameterObject 参数对象
+   * @return BoundSql 对象
+   */
   BoundSql getBoundSql(Object parameterObject);
 
 }
