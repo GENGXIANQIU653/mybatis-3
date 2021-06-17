@@ -103,11 +103,18 @@ class AutoMappingUnknownColumnBehaviorTest {
 
     @Test
     void none() {
+
         sqlSessionFactory.getConfiguration().setAutoMappingUnknownColumnBehavior(AutoMappingUnknownColumnBehavior.NONE);
+
         try (SqlSession session = sqlSessionFactory.openSession()) {
+            // 代理对象
             Mapper mapper = session.getMapper(Mapper.class);
+
+            // 通过代理对象执行查询，由MapperProxy.invoke 拦截代理逻辑，add by gxq 2021-06-10
             Author author = mapper.selectAuthor(101);
+
             assertThat(author.getId()).isEqualTo(101);
+
             assertThat(author.getUsername()).isNull();
         }
     }

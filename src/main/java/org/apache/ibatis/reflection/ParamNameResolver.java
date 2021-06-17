@@ -158,13 +158,27 @@ public class ParamNameResolver {
    * @return the named params
    */
   public Object getNamedParams(Object[] args) {
+
     final int paramCount = names.size();
+
     if (args == null || paramCount == 0) {
       return null;
-    } else if (!hasParamAnnotation && paramCount == 1) {
+    }
+
+    else if (!hasParamAnnotation && paramCount == 1) {
+      /**
+       * 如果方法参数列表无 @Param 注解，且仅有一个非特别参数，则返回该参数的值。
+       * 比如如下方法：
+       *     List findList(RowBounds rb, String name)
+       * names 如下：
+       *     names = {1 : "0"}
+       * 此种情况下，返回 args[names.firstKey()]，即 args[1] -> name
+       */
       Object value = args[names.firstKey()];
       return wrapToMapIfCollection(value, useActualParamName ? names.get(0) : null);
-    } else {
+    }
+
+    else {
       final Map<String, Object> param = new ParamMap<>();
       int i = 0;
       for (Map.Entry<Integer, String> entry : names.entrySet()) {

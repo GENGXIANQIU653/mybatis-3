@@ -66,19 +66,22 @@ public class MapperMethod {
   }
 
   /**
+   * 路由
    * 根据解析结果，路由到恰当的SqlSession方法上
    * @param sqlSession
    * @param args
    * @return
    */
   public Object execute(SqlSession sqlSession, Object[] args) {
+
     Object result;
+
+    // 根据 SQL 类型执行相应的数据库操作
     switch (command.getType()) {
       case INSERT: {
         // 转换参数
         Object param = method.convertArgsToSqlCommandParam(args);
-        // 执行 INSERT 操作
-        // 转换 rowCount
+        // 执行插入操作，rowCountResult 方法用于处理返回值
         result = rowCountResult(sqlSession.insert(command.getName(), param));
         break;
       }
@@ -98,10 +101,14 @@ public class MapperMethod {
         break;
       }
       case SELECT:
-        // <2.1> 无返回，并且有 ResultHandler 方法参数，则将查询的结果，提交给 ResultHandler 进行处理
+
+        // 根据目标方法的返回类型进行相应的查询操作
+
+        // <2.1> 返回void，并且有 ResultHandler 方法参数，则将查询的结果，提交给 ResultHandler 进行处理
         if (method.returnsVoid() && method.hasResultHandler()) {
           /**
-           * 将查询的结果，提交给 ResultHandler 进行处理
+           * 如果方法返回值为 void，但参数列表中包含 ResultHandler，表明使用者
+           * 想通过 ResultHandler 的方式获取查询结果，而非通过返回值获取结果
            */
           executeWithResultHandler(sqlSession, args);
           result = null;
@@ -328,18 +335,37 @@ public class MapperMethod {
       return type;
     }
 
-    private MappedStatement resolveMappedStatement(Class<?> mapperInterface, String methodName,
-        Class<?> declaringClass, Configuration configuration) {
+    /**
+     * 解析 MappedStatement
+     * @param mapperInterface
+     * @param methodName
+     * @param declaringClass
+     * @param configuration
+     * @return
+     */
+    private MappedStatement resolveMappedStatement(Class<?> mapperInterface,
+                                                   String methodName, Class<?> declaringClass,
+                                                   Configuration configuration) {
+
       String statementId = mapperInterface.getName() + "." + methodName;
+
       if (configuration.hasStatement(statementId)) {
         return configuration.getMappedStatement(statementId);
-      } else if (mapperInterface.equals(declaringClass)) {
+      }
+
+      else if (mapperInterface.equals(declaringClass)) {
         return null;
       }
+
       for (Class<?> superInterface : mapperInterface.getInterfaces()) {
+
         if (declaringClass.isAssignableFrom(superInterface)) {
-          MappedStatement ms = resolveMappedStatement(superInterface, methodName,
-              declaringClass, configuration);
+
+          MappedStatement ms = resolveMappedStatement(superInterface,
+            methodName,
+            declaringClass,
+            configuration);
+
           if (ms != null) {
             return ms;
           }
@@ -365,6 +391,7 @@ public class MapperMethod {
     // 分页参数
     private final Integer rowBoundsIndex;
 
+    // 参数解析器
     private final ParamNameResolver paramNameResolver;
 
     public MethodSignature(Configuration configuration, Class<?> mapperInterface, Method method) {
@@ -405,6 +432,11 @@ public class MapperMethod {
       this.paramNameResolver = new ParamNameResolver(configuration, method);
     }
 
+    /**
+     * 参数转换
+     * @param args
+     * @return
+     */
     public Object convertArgsToSqlCommandParam(Object[] args) {
       return paramNameResolver.getNamedParams(args);
     }

@@ -106,16 +106,22 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
     }
   }
 
+  /**
+   * 创建invoker
+   * @param method
+   * @return
+   * @throws Throwable
+   */
   private MapperMethodInvoker cachedInvoker(Method method) throws Throwable {
     try {
-      // A workaround for https://bugs.openjdk.java.net/browse/JDK-8161372
-      // It should be removed once the fix is backported to Java 8 or
-      // MyBatis drops Java 8 support. See gh-1929
       MapperMethodInvoker invoker = methodCache.get(method);
       if (invoker != null) {
         return invoker;
       }
 
+      // 说明：Map.computeIfAbsent()
+      // 首先判断缓存MAP中是否存在指定key的值，如果不存在，会自动调用mappingFunction(key)计算key的value，
+      // 然后将key = value放入到缓存Map,java8会使用thread-safe的方式从cache中存取记录
       return methodCache.computeIfAbsent(method, m -> {
         if (m.isDefault()) {
           try {
@@ -129,6 +135,9 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
             throw new RuntimeException(e);
           }
         } else {
+          /**
+           * MapperMethod 对象
+           */
           return new PlainMethodInvoker(new MapperMethod(mapperInterface, method, sqlSession.getConfiguration()));
         }
       });
