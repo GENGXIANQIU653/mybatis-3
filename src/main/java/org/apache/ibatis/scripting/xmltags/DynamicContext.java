@@ -63,7 +63,7 @@ public class DynamicContext {
    */
   public DynamicContext(Configuration configuration, Object parameterObject) {
 
-    // <1> 初始化 bindings 参数
+    // <1> 初始化 bindings 参数，即 创建上下文的参数集合 ContextMap
     if (parameterObject != null && !(parameterObject instanceof Map)) {
       // <1.1>
       MetaObject metaObject = configuration.newMetaObject(parameterObject);
@@ -73,7 +73,7 @@ public class DynamicContext {
       bindings = new ContextMap(null, false);
     }
 
-    // <2> 添加 bindings 的默认值
+    // <2> 添加 bindings 的默认值，即 存放运行时参数 parameterObject 以及 databaseId
     bindings.put(PARAMETER_OBJECT_KEY, parameterObject);
     bindings.put(DATABASE_ID_KEY, configuration.getDatabaseId());
   }
@@ -132,6 +132,7 @@ public class DynamicContext {
     @Override
     public Object get(Object key) {
       String strKey = (String) key;
+      // 检查是否包含 strKey，若包含则直接返回
       if (super.containsKey(strKey)) {
         return super.get(strKey);
       }
@@ -143,7 +144,7 @@ public class DynamicContext {
       if (fallbackParameterObject && !parameterMetaObject.hasGetter(strKey)) {
         return parameterMetaObject.getOriginalObject();
       } else {
-        // issue #61 do not modify the context when reading
+        // 从运行时参数中查找结果
         return parameterMetaObject.getValue(strKey);
       }
     }

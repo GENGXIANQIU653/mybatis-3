@@ -180,12 +180,22 @@ public class ParamNameResolver {
 
     else {
       final Map<String, Object> param = new ParamMap<>();
+
       int i = 0;
+
       for (Map.Entry<Integer, String> entry : names.entrySet()) {
+
+        // 添加 <参数名, 参数值> 键值对到 param 中
         param.put(entry.getValue(), args[entry.getKey()]);
-        // add generic param names (param1, param2, ...)
+
+        // genericParamName = param + index。比如 param1, param2, ... paramN
         final String genericParamName = GENERIC_NAME_PREFIX + (i + 1);
-        // ensure not to overwrite parameter named with @Param
+
+        /*
+         * 检测 names 中是否包含 genericParamName，什么情况下会包含？答案如下：
+         *
+         *   使用者显式将参数名称配置为 param1，即 @Param("param1")
+         */
         if (!names.containsValue(genericParamName)) {
           param.put(genericParamName, args[entry.getKey()]);
         }

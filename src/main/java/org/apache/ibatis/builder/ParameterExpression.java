@@ -35,10 +35,20 @@ public class ParameterExpression extends HashMap<String, String> {
 
   private static final long serialVersionUID = -2417552199605158680L;
 
+  /**
+   * ParameterExpression
+   * @param expression
+   */
   public ParameterExpression(String expression) {
+    // 调内部方法parse
     parse(expression);
   }
 
+
+  /**
+   * 解析expression
+   * @param expression
+   */
   private void parse(String expression) {
     int p = skipWS(expression, 0);
     if (expression.charAt(p) == '(') {

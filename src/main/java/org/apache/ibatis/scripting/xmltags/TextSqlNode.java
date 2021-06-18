@@ -26,7 +26,9 @@ import org.apache.ibatis.type.SimpleTypeRegistry;
  * @author Clinton Begin
  */
 public class TextSqlNode implements SqlNode {
+
   private final String text;
+
   private final Pattern injectionFilter;
 
   public TextSqlNode(String text) {
@@ -47,15 +49,36 @@ public class TextSqlNode implements SqlNode {
 
   @Override
   public boolean apply(DynamicContext context) {
+    // 创建 ${} 占位符解析器，见detail
     GenericTokenParser parser = createParser(new BindingTokenParser(context, injectionFilter));
+
+    // 解析 ${} 占位符，并将解析结果添加到 DynamicContext 中
     context.appendSql(parser.parse(text));
     return true;
   }
 
+  /**
+   * 创建占位符解析器
+   * @param handler
+   * @return
+   */
   private GenericTokenParser createParser(TokenHandler handler) {
+    // 创建占位符解析器，GenericTokenParser 是一个通用解析器，并非只能解析 ${}
     return new GenericTokenParser("${", "}", handler);
   }
 
+  /**
+   * BindingTokenParser 负责解析标记内容，并将解析结果返回给 GenericTokenParser，用于替换 ${xxx} 标记
+   *
+   * 我们有这样一个 SQL 语句，用于从 article 表中查询某个作者所写的文章。如下：
+   *
+   * SELECT * FROM article WHERE author = '${author}'
+   *
+   * 假设我们我们传入的 author 值为 abc，那么该 SQL 最终会被解析成如下的结果：
+   *
+   * SELECT * FROM article WHERE author = 'abc'
+   *
+   */
   private static class BindingTokenParser implements TokenHandler {
 
     private DynamicContext context;
@@ -68,14 +91,23 @@ public class TextSqlNode implements SqlNode {
 
     @Override
     public String handleToken(String content) {
+
       Object parameter = context.getBindings().get("_parameter");
+
       if (parameter == null) {
         context.getBindings().put("value", null);
       } else if (SimpleTypeRegistry.isSimpleType(parameter.getClass())) {
         context.getBindings().put("value", parameter);
       }
+
+      /**
+       * 通过 ONGL 从用户传入的参数中获取结果
+       */
       Object value = OgnlCache.getValue(content, context.getBindings());
+
       String srtValue = value == null ? "" : String.valueOf(value); // issue #274 return "" instead of "null"
+
+      // 通过正则表达式检测 srtValue 有效性
       checkInjection(srtValue);
       return srtValue;
     }

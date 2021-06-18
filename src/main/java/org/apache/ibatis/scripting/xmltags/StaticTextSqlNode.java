@@ -17,8 +17,12 @@ package org.apache.ibatis.scripting.xmltags;
 
 /**
  * @author Clinton Begin
+ *
+ * StaticTextSqlNode 用于存储静态文本
+ *
  */
 public class StaticTextSqlNode implements SqlNode {
+
   private final String text;
 
   public StaticTextSqlNode(String text) {
@@ -27,6 +31,8 @@ public class StaticTextSqlNode implements SqlNode {
 
   @Override
   public boolean apply(DynamicContext context) {
+
+    // 由于存储静态文本，所以它不需要什么解析逻辑，直接将其存储的 SQL 片段添加到 DynamicContext 中即可
     context.appendSql(text);
     return true;
   }

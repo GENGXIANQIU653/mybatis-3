@@ -17,9 +17,16 @@ package org.apache.ibatis.scripting.xmltags;
 
 /**
  * @author Clinton Begin
+ *
+ * IfSqlNode 对应的是 <if test=‘xxx’> 节点，<if> 节点是日常开发中使用频次比较高的一个节点。
+ * IfSqlNode 的 apply 方法逻辑并不复杂，首先是通过 ONGL 检测 test 表达式是否为 true，如果为 true，则调用其他节点的 apply 方法继续进行解析。
+ * 需要注意的是 <if> 节点中也可嵌套其他的动态节点，并非只有纯文本。
+ * 因此 contents 变量遍历指向的是 MixedSqlNode，而非 StaticTextSqlNode
  */
 public class IfSqlNode implements SqlNode {
+
   private final ExpressionEvaluator evaluator;
+
   /**
    * 判断表达式
    */
@@ -42,7 +49,7 @@ public class IfSqlNode implements SqlNode {
   public boolean apply(DynamicContext context) {
     // <1> 判断是否符合条件
     if (evaluator.evaluateBoolean(test, context.getBindings())) {
-      // <2> 符合，执行 contents 的应用
+      // <2> 若 test 表达式中的条件成立，则调用其他节点的 apply 方法进行解析
       contents.apply(context);
       return true;
     }

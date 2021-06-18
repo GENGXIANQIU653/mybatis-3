@@ -131,14 +131,23 @@ public abstract class BaseExecutor implements Executor {
 
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+    // 获取 BoundSql
     BoundSql boundSql = ms.getBoundSql(parameter);
+    // 创建 CacheKey
     CacheKey key = createCacheKey(ms, parameter, rowBounds, boundSql);
+    // 调用重载方法
     return query(ms, parameter, rowBounds, resultHandler, key, boundSql);
   }
 
   @SuppressWarnings("unchecked")
   @Override
-  public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql) throws SQLException {
+  public <E> List<E> query(MappedStatement ms,
+                           Object parameter,
+                           RowBounds rowBounds,
+                           ResultHandler resultHandler,
+                           CacheKey key,
+                           BoundSql boundSql) throws SQLException {
+
     ErrorContext.instance().resource(ms.getResource()).activity("executing a query").object(ms.getId());
     if (closed) {
       throw new ExecutorException("Executor was closed.");
@@ -149,23 +158,31 @@ public abstract class BaseExecutor implements Executor {
     List<E> list;
     try {
       queryStack++;
+      /**
+       * 从一级缓存中获取缓存项
+       */
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
       if (list != null) {
         handleLocallyCachedOutputParameters(ms, key, parameter, boundSql);
       } else {
+        /**
+         * 一级缓存未命中，则从数据库中查询
+         */
         list = queryFromDatabase(ms, parameter, rowBounds, resultHandler, key, boundSql);
       }
     } finally {
       queryStack--;
     }
     if (queryStack == 0) {
+      // 从一级缓存中延迟加载嵌套查询结果
       for (DeferredLoad deferredLoad : deferredLoads) {
         deferredLoad.load();
       }
-      // issue #601
+
       deferredLoads.clear();
+
       if (configuration.getLocalCacheScope() == LocalCacheScope.STATEMENT) {
-        // issue #482
+
         clearLocalCache();
       }
     }
@@ -318,14 +335,33 @@ public abstract class BaseExecutor implements Executor {
     }
   }
 
+  /**
+   * 从数据库查询
+   * @param ms
+   * @param parameter
+   * @param rowBounds
+   * @param resultHandler
+   * @param key
+   * @param boundSql
+   * @param <E>
+   * @return
+   * @throws SQLException
+   */
   private <E> List<E> queryFromDatabase(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql) throws SQLException {
     List<E> list;
+    // 向缓存中存储一个占位符
     localCache.putObject(key, EXECUTION_PLACEHOLDER);
+
     try {
+      /**
+       * 调用 doQuery 进行查询，见【simpleExecutor】
+       */
       list = doQuery(ms, parameter, rowBounds, resultHandler, boundSql);
     } finally {
+      // 移除占位符
       localCache.removeObject(key);
     }
+    // 缓存查询结果
     localCache.putObject(key, list);
     if (ms.getStatementType() == StatementType.CALLABLE) {
       localOutputParameterCache.putObject(key, parameter);

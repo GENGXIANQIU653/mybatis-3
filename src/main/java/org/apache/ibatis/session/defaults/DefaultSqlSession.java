@@ -90,6 +90,13 @@ public class DefaultSqlSession implements SqlSession {
     return this.selectOne(statement, null);
   }
 
+  /**
+   * selectOne
+   * @param statement Unique identifier matching the statement to use.
+   * @param parameter A parameter object to pass to the statement.
+   * @param <T>
+   * @return
+   */
   @Override
   public <T> T selectOne(String statement, Object parameter) {
 
@@ -97,10 +104,16 @@ public class DefaultSqlSession implements SqlSession {
     List<T> list = this.selectList(statement, parameter);
 
     if (list.size() == 1) {
+      // 返回结果
       return list.get(0);
-    } else if (list.size() > 1) {
+    }
+
+    else if (list.size() > 1) {
+      // 如果查询结果大于1则抛出异常，这个异常也是很常见的
       throw new TooManyResultsException("Expected one result (or null) to be returned by selectOne(), but found: " + list.size());
-    } else {
+    }
+
+    else {
       return null;
     }
   }
@@ -277,7 +290,13 @@ public class DefaultSqlSession implements SqlSession {
       MappedStatement ms = configuration.getMappedStatement(statement);
 
       /**
-       * <2> 执行查询
+       * <2> 调用 Executor 实现类中的 query 方法，执行查询
+       *
+       * 这里要来说说 executor 变量，该变量类型为 Executor。Executor 是一个接口，它的实现类包括【CachingExecutor】、BaseExecutor
+       * 【SimpleExecutor、ReuseExecutor、BatchExecutor、ClosedExecutor】
+       *
+       * 默认情况下，executor 的类型为 【CachingExecutor】，该类是一个装饰器类，用于给目标 Executor 增加二级缓存功能。
+       * 那目标 Executor 是谁呢？默认情况下是 【SimpleExecutor】
        */
       return executor.query(ms, wrapCollection(parameter), rowBounds, handler);
 

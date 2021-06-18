@@ -43,6 +43,10 @@ public class ParameterMapping {
   }
 
   public static class Builder {
+
+    /**
+     * parameterMapping 对象
+     */
     private ParameterMapping parameterMapping = new ParameterMapping();
 
     public Builder(Configuration configuration, String property, TypeHandler<?> typeHandler) {
@@ -52,6 +56,12 @@ public class ParameterMapping {
       parameterMapping.mode = ParameterMode.IN;
     }
 
+    /**
+     * 构造函数
+     * @param configuration
+     * @param property
+     * @param javaType
+     */
     public Builder(Configuration configuration, String property, Class<?> javaType) {
       parameterMapping.configuration = configuration;
       parameterMapping.property = property;
@@ -121,6 +131,9 @@ public class ParameterMapping {
       }
     }
 
+    /**
+     * 解析 TypeHandler
+     */
     private void resolveTypeHandler() {
       if (parameterMapping.typeHandler == null && parameterMapping.javaType != null) {
         Configuration configuration = parameterMapping.configuration;

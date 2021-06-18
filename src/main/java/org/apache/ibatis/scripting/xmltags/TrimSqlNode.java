@@ -62,7 +62,13 @@ public class TrimSqlNode implements SqlNode {
     this(configuration, contents, prefix, parseOverrides(prefixesToOverride), suffix, parseOverrides(suffixesToOverride));
   }
 
-  protected TrimSqlNode(Configuration configuration, SqlNode contents, String prefix, List<String> prefixesToOverride, String suffix, List<String> suffixesToOverride) {
+  protected TrimSqlNode(Configuration configuration,
+                        SqlNode contents,
+                        String prefix,
+                        List<String> prefixesToOverride,
+                        String suffix,
+                        List<String> suffixesToOverride) {
+
     this.contents = contents;
     this.prefix = prefix;
     this.prefixesToOverride = prefixesToOverride;
@@ -71,14 +77,21 @@ public class TrimSqlNode implements SqlNode {
     this.configuration = configuration;
   }
 
+  /**
+   * apply 方法首选调用了其他 SqlNode 的 apply 方法解析节点内容，这步操作完成后，FilteredDynamicContext 中会得到一条 SQL 片段字符串。
+   * 接下里需要做的事情是过滤字符串前缀后和后缀，并添加相应的前缀和后缀。这个事情由 FilteredDynamicContext 负责
+   * @param context 上下文
+   * @return
+   */
   @Override
   public boolean apply(DynamicContext context) {
     // <1> 创建 FilteredDynamicContext 对象
     FilteredDynamicContext filteredDynamicContext = new FilteredDynamicContext(context);
-    // <2> 执行 contents 的应用
+    // <2> 解析节点内容
     boolean result = contents.apply(filteredDynamicContext);
-    // <3> 执行 FilteredDynamicContext 的应用
+    // <3> 过滤掉前缀和后缀
     filteredDynamicContext.applyAll();
+
     return result;
   }
 
@@ -99,10 +112,18 @@ public class TrimSqlNode implements SqlNode {
     return Collections.emptyList();
   }
 
+  /**
+   * FilteredDynamicContext 是 TrimSqlNode 的私有内部类
+   */
   private class FilteredDynamicContext extends DynamicContext {
+
     private DynamicContext delegate;
+
+    /** 构造方法会将下面两个布尔值置为 false */
     private boolean prefixApplied;
+
     private boolean suffixApplied;
+
     private StringBuilder sqlBuffer;
 
     public FilteredDynamicContext(DynamicContext delegate) {
@@ -117,9 +138,11 @@ public class TrimSqlNode implements SqlNode {
       sqlBuffer = new StringBuilder(sqlBuffer.toString().trim());
       String trimmedUppercaseSql = sqlBuffer.toString().toUpperCase(Locale.ENGLISH);
       if (trimmedUppercaseSql.length() > 0) {
+        // 引用前缀和后缀，也就是对 sql 进行过滤操作，移除掉前缀或后缀
         applyPrefix(sqlBuffer, trimmedUppercaseSql);
         applySuffix(sqlBuffer, trimmedUppercaseSql);
       }
+      // 将当前对象的 sqlBuffer 内容添加到代理类中
       delegate.appendSql(sqlBuffer.toString());
     }
 
@@ -148,17 +171,26 @@ public class TrimSqlNode implements SqlNode {
       return delegate.getSql();
     }
 
+    /**
+     *
+     * @param sql--> AND ID = #{id}
+     * @param trimmedUppercaseSql--> AND ID = #{ID}
+     */
     private void applyPrefix(StringBuilder sql, String trimmedUppercaseSql) {
       if (!prefixApplied) {
+        // 设置 prefixApplied 为 true，以下逻辑仅会被执行一次
         prefixApplied = true;
         if (prefixesToOverride != null) {
           for (String toRemove : prefixesToOverride) {
+            // 检测当前 sql 字符串是否包含 toRemove 前缀，比如 'AND ', 'AND\t'
             if (trimmedUppercaseSql.startsWith(toRemove)) {
+              // 移除前缀
               sql.delete(0, toRemove.trim().length());
               break;
             }
           }
         }
+        // 插入前缀，比如 WHERE
         if (prefix != null) {
           sql.insert(0, " ");
           sql.insert(0, prefix);

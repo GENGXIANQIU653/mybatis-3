@@ -53,14 +53,35 @@ public class SimpleExecutor extends BaseExecutor {
     }
   }
 
+  /**
+   *
+   * @param ms
+   * @param parameter
+   * @param rowBounds
+   * @param resultHandler
+   * @param boundSql
+   * @param <E>
+   * @return
+   * @throws SQLException
+   */
   @Override
   public <E> List<E> doQuery(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) throws SQLException {
     Statement stmt = null;
     try {
       Configuration configuration = ms.getConfiguration();
+
+      // 创建 StatementHandler
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
+
+      // 创建 Statement
       stmt = prepareStatement(handler, ms.getStatementLog());
+
+      /**
+       * 执行查询操作
+       * PreparedStatementHandler 为例，看看它的 query 方法是怎样实现的
+       */
       return handler.query(stmt, resultHandler);
+
     } finally {
       closeStatement(stmt);
     }

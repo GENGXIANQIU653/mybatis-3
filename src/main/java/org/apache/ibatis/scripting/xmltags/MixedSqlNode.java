@@ -19,8 +19,11 @@ import java.util.List;
 
 /**
  * @author Clinton Begin
+ *
+ * MixedSqlNode 可以看做是 SqlNode 实现类对象的容器，凡是实现了 SqlNode 接口的类都可以存储到 MixedSqlNode 中，包括它自己
  */
 public class MixedSqlNode implements SqlNode {
+
   private final List<SqlNode> contents;
 
   public MixedSqlNode(List<SqlNode> contents) {
@@ -29,6 +32,8 @@ public class MixedSqlNode implements SqlNode {
 
   @Override
   public boolean apply(DynamicContext context) {
+
+    // 解析方法 apply 逻辑比较简单，即遍历 SqlNode 集合，并调用其他 SalNode 实现类对象的 apply 方法解析 sql
     contents.forEach(node -> node.apply(context));
     return true;
   }

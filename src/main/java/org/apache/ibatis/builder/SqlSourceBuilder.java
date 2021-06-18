@@ -53,20 +53,20 @@ public class SqlSourceBuilder extends BaseBuilder {
    */
   public SqlSource parse(String originalSql, Class<?> parameterType, Map<String, Object> additionalParameters) {
 
-    // <1> 创建 ParameterMappingTokenHandler 对象
+    // <1> 创建 ParameterMappingTokenHandler 对象，即创建 #{} 占位符处理器
     ParameterMappingTokenHandler handler = new ParameterMappingTokenHandler(configuration, parameterType, additionalParameters);
 
-    // <2> 创建 GenericTokenParser 对象。注意，传入的参数是 #{ 和 } 对
+    // <2> 创建 GenericTokenParser 对象，即创建 #{} 占位符解析器。注意，传入的参数是 #{ 和 } 对
     GenericTokenParser parser = new GenericTokenParser("#{", "}", handler);
 
-    // <3> 执行解析
+    // <3> 解析 #{} 占位符，并返回解析结果
     String sql;
     if (configuration.isShrinkWhitespacesInSql()) {
       sql = parser.parse(removeExtraWhitespaces(originalSql));
     } else {
       sql = parser.parse(originalSql);
     }
-    // <4> 创建 StaticSqlSource 对象
+    // <4> 创建 StaticSqlSource 对象，即封装解析结果到 StaticSqlSource 中，并返回
     return new StaticSqlSource(configuration, sql, handler.getParameterMappings());
   }
 
@@ -127,12 +127,22 @@ public class SqlSourceBuilder extends BaseBuilder {
 
     /**
      * 如下两个步骤，就是 ParameterMappingTokenHandler 的核心
-     * @param content Token 字符串
+     *
+     * handleToken 方法看起来比较简单，但实际上并非如此
+     * 1、GenericTokenParser 负责将 #{} 占位符中的内容抽取出来，并将抽取出的内容传给 handleToken 方法
+     * 2、handleToken 方法负责将传入的参数解析成对应的 ParameterMapping 对象，这步操作由 buildParameterMapping 方法完成
+     *
+     * @param content Token 字符串，即openToken 和 closeToken 中间部分
      * @return
      */
     @Override
     public String handleToken(String content) {
-      // <1> 构建 ParameterMapping 对象，并添加到 parameterMappings 中
+      /**
+       * <1> 构建 ParameterMapping 对象，并添加到 parameterMappings 中，见detail
+       *
+       * 例如
+       * 此处 将"age,javaType=int,jdbcType=NUMERIC" 解析并构建成 ParameterMapping 对象
+       */
       parameterMappings.add(buildParameterMapping(content));
       // <2> 返回 ? 占位符
       return "?";
@@ -143,9 +153,32 @@ public class SqlSourceBuilder extends BaseBuilder {
      * @param content
      * @return
      *
-     * 假设 content = "#{age,javaType=int,jdbcType=NUMERIC,typeHandler=MyTypeHandler}"
+     * 代码很多，逻辑看起来很复杂。但是它做的事情却不是很多，只有3件事情。如下：
+     *
+     * 1、解析 content
+     * 2、解析 propertyType，对应分割线之上的代码
+     * 3、构建 ParameterMapping 对象，对应分割线之下的代码
      */
     private ParameterMapping buildParameterMapping(String content) {
+
+      /**
+       * 将 #{xxx} 占位符中的内容解析成 Map。大家可能很好奇一个普通的字符串是怎么解析成 Map 的，
+       * 举例说明一下。如下：
+       *
+       *    #{age,javaType=int,jdbcType=NUMERIC,typeHandler=MyTypeHandler}
+       *
+       * 上面占位符中的内容最终会被解析成如下的结果：
+       *
+       *  {
+       *      "property": "age",
+       *      "typeHandler": "MyTypeHandler",
+       *      "jdbcType": "NUMERIC",
+       *      "javaType": "int"
+       *  }
+       *
+       * parseParameterMapping 内部依赖 ParameterExpression 对字符串进行解析，ParameterExpression 的
+       * 逻辑不是很复杂，这里就不分析了。大家若有兴趣，可自行分析
+       */
 
       // <1> 解析成 Map 集合
       Map<String, String> propertiesMap = parseParameterMapping(content);
@@ -157,39 +190,72 @@ public class SqlSourceBuilder extends BaseBuilder {
       // 类型
       Class<?> propertyType;
 
+      // metaParameters 为 DynamicContext 成员变量 bindings 的元信息对象
       if (metaParameters.hasGetter(property)) {
         propertyType = metaParameters.getGetterType(property);
+
+        /**
+         * parameterType 是运行时参数的类型。
+         * 1、如果用户传入的是单个参数，比如 Article 对象，此时parameterType 为 Article.class。
+         * 2、如果用户传入的多个参数，比如 [id = 1, author = "coolblog"]，MyBatis 会使用 ParamMap 封装这些参数，此时 parameterType 为 ParamMap.class。
+         * 3、如果 parameterType 有相应的 TypeHandler，这里则把 parameterType 设为 propertyType
+         */
       } else if (typeHandlerRegistry.hasTypeHandler(parameterType)) {
         propertyType = parameterType;
       } else if (JdbcType.CURSOR.name().equals(propertiesMap.get("jdbcType"))) {
         propertyType = java.sql.ResultSet.class;
       } else if (property == null || Map.class.isAssignableFrom(parameterType)) {
+        // 如果 property 为空，或 parameterType 是 Map 类型，则将 propertyType 设为 Object.class
         propertyType = Object.class;
       } else {
+
+        /*
+         * 代码逻辑走到此分支中，表明 parameterType 是一个自定义的类，
+         * 比如 Article，此时为该类创建一个元信息对象
+         */
         MetaClass metaClass = MetaClass.forClass(parameterType, configuration.getReflectorFactory());
+
+        // 检测参数对象有没有与 property 想对应的 getter 方法
         if (metaClass.hasGetter(property)) {
+
+          // 获取成员变量的类型
           propertyType = metaClass.getGetterType(property);
         } else {
           propertyType = Object.class;
         }
       }
 
+      // --------------------propertyType 解析完成--------------------
+
+      // -------------------------- 分割线 ---------------------------
+
       // <3> 创建 ParameterMapping.Builder 对象
       ParameterMapping.Builder builder = new ParameterMapping.Builder(configuration, property, propertyType);
 
-      // <3.1> 初始化 ParameterMapping.Builder 对象的属性
+      // <3.1> 将 propertyType 赋值给 javaType，即初始化 ParameterMapping.Builder 对象的属性
       Class<?> javaType = propertyType;
 
       String typeHandlerAlias = null;
+
+      // 遍历 propertiesMap
       for (Map.Entry<String, String> entry : propertiesMap.entrySet()) {
+
         String name = entry.getKey();
         String value = entry.getValue();
+
         if ("javaType".equals(name)) {
+
+          // 如果用户明确配置了 javaType，则以用户的配置为准
           javaType = resolveClass(value);
           builder.javaType(javaType);
-        } else if ("jdbcType".equals(name)) {
+        }
+
+        else if ("jdbcType".equals(name)) {
+          // 解析 jdbcType
           builder.jdbcType(resolveJdbcType(value));
-        } else if ("mode".equals(name)) {
+        }
+
+        else if ("mode".equals(name)) {
           builder.mode(resolveParameterMode(value));
         } else if ("numericScale".equals(name)) {
           builder.numericScale(Integer.valueOf(value));
@@ -217,6 +283,11 @@ public class SqlSourceBuilder extends BaseBuilder {
       return builder.build();
     }
 
+    /**
+     * parseParameterMapping
+     * @param content
+     * @return
+     */
     private Map<String, String> parseParameterMapping(String content) {
       try {
         return new ParameterExpression(content);

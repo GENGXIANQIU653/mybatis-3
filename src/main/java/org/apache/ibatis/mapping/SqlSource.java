@@ -22,6 +22,13 @@ package org.apache.ibatis.mapping;
  * @author Clinton Begin
  *
  * SQL 来源接口。它代表从 Mapper XML 或方法注解上，读取的一条 SQL 内容
+ *
+ * 它有如下几个实现类：
+ * DynamicSqlSource
+ * RawSqlSource
+ * StaticSqlSource
+ * ProviderSqlSource
+ * VelocitySqlSource
  */
 public interface SqlSource {
 

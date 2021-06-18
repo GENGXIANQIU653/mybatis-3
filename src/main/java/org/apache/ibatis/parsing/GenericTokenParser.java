@@ -17,7 +17,8 @@ package org.apache.ibatis.parsing;
 
 /**
  * @author Clinton Begin
- * 通用的 Token 解析器
+ * 通用的 Token 解析器, 用于解析形如 ${xxx}，#{xxx} 等标记
+ * GenericTokenParser 负责将标记中的内容抽取出来，并将标记内容交给相应的 TokenHandler 去处理
  */
 public class GenericTokenParser {
 
@@ -40,16 +41,19 @@ public class GenericTokenParser {
   }
 
   /**
-   * 执行解析
+   * 执行解析，取出token内容，即openToken 和 closeToken 中间内容
    * @param text
    * @return
+   *
+   * 例如
+   * text = "SELECT * FROM Author WHERE age = #{age,javaType=int,jdbcType=NUMERIC}"
    */
   public String parse(String text) {
     if (text == null || text.isEmpty()) {
       return "";
     }
     // search open token
-    // 寻找开始的 openToken 的位置
+    // 寻找开始的 openToken,即 "#{" 的位置， 此处start=33
     int start = text.indexOf(openToken);
     // 找不到，直接返回
     if (start == -1) {
@@ -93,9 +97,15 @@ public class GenericTokenParser {
         } else {
           expression.setLength(0);
         }
+        // builder = "SELECT * FROM Author WHERE age = "
         builder.append(src, offset, start - offset);
+
+        // 修改 offset, 此处 offset = 35
         offset = start + openToken.length();
+
+        // "}" 的index，此处 end = 68
         int end = text.indexOf(closeToken, offset);
+
         while (end > -1) {
           if (end > offset && src[end - 1] == '\\') {
             // this close token is escaped. remove the backslash and continue.
@@ -103,21 +113,33 @@ public class GenericTokenParser {
             offset = end + closeToken.length();
             end = text.indexOf(closeToken, offset);
           } else {
+            // 此处 expression = "age,javaType=int,jdbcType=NUMERIC"
             expression.append(src, offset, end - offset);
             break;
           }
         }
+        // end = 68
         if (end == -1) {
           // close token was not found.
           builder.append(src, start, src.length - start);
           offset = src.length;
-        } else {
+        }
+        // ===>>>> 执行此分支
+        else {
+          /**
+           * 【重要】handler.handleToken(expression.toString())，将传入的参数解析成对应的 ParameterMapping 对象
+           * handleToken 返回" ？"
+           * 此处 builder = "SELECT * FROM Author WHERE age = ?"
+           */
           builder.append(handler.handleToken(expression.toString()));
+          // 此处 offset = 69
           offset = end + closeToken.length();
         }
       }
+      // 此时 start = -1
       start = text.indexOf(openToken, offset);
     } while (start > -1);
+    // false
     if (offset < src.length) {
       builder.append(src, offset, src.length - offset);
     }

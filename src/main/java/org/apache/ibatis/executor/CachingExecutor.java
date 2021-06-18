@@ -82,30 +82,94 @@ public class CachingExecutor implements Executor {
     return delegate.queryCursor(ms, parameter, rowBounds);
   }
 
+
+  /**
+   * 获取 BoundSql 对象，创建 CacheKey 对象，然后再将这两个对象传给重载方法
+   *
+   * BoundSql 的获取过程较为复杂，我将在下一节进行分析
+   * CacheKey 以及接下来即将出现的一二级缓存将会独立成文进行分析
+   *
+   * 此方法和 SimpleExecutor 父类 BaseExecutor 中的实现没什么区别，有区别的地方在于这个方法所调用的重载方法
+   *
+   * @param ms
+   * @param parameterObject
+   * @param rowBounds
+   * @param resultHandler
+   * @param <E>
+   * @return
+   * @throws SQLException
+   *
+   *
+   */
   @Override
-  public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+  public <E> List<E> query(MappedStatement ms,
+                           Object parameterObject,
+                           RowBounds rowBounds,
+                           ResultHandler resultHandler) throws SQLException {
+
+    /**
+     * 获取 BoundSql
+     */
     BoundSql boundSql = ms.getBoundSql(parameterObject);
+
+    /**
+     * 创建 CacheKey
+     */
     CacheKey key = createCacheKey(ms, parameterObject, rowBounds, boundSql);
+
+    // 调用重载方法
     return query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
 
+  /**
+   * 代码涉及到了二级缓存，若二级缓存为空，或未命中，则调用被装饰类的 query 方法
+   * @param ms
+   * @param parameterObject
+   * @param rowBounds
+   * @param resultHandler
+   * @param key
+   * @param boundSql
+   * @param <E>
+   * @return
+   * @throws SQLException
+   */
   @Override
-  public <E> List<E> query(MappedStatement ms, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql)
-      throws SQLException {
+  public <E> List<E> query(MappedStatement ms,
+                           Object parameterObject,
+                           RowBounds rowBounds,
+                           ResultHandler resultHandler,
+                           CacheKey key,
+                           BoundSql boundSql) throws SQLException {
+
+    // 从 MappedStatement 中获取缓存
     Cache cache = ms.getCache();
+
+    // 若映射文件中未配置缓存或参照缓存，此时 cache = null
     if (cache != null) {
+
       flushCacheIfRequired(ms);
+
       if (ms.isUseCache() && resultHandler == null) {
+
         ensureNoOutParams(ms, boundSql);
+
         @SuppressWarnings("unchecked")
         List<E> list = (List<E>) tcm.getObject(cache, key);
+
         if (list == null) {
+          /**
+           * 若缓存未命中，则调用被装饰类的 query 方法
+           */
           list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
-          tcm.putObject(cache, key, list); // issue #578 and #116
+          tcm.putObject(cache, key, list);
         }
         return list;
       }
     }
+
+    /**
+     * 调用被装饰类的 query 方法，通常是【BaseExecutor.query】
+     */
     return delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
   }
 

@@ -307,10 +307,36 @@ public final class MappedStatement {
     return resultSets;
   }
 
+  /**
+   *
+   * @param parameterObject
+   * @return
+   */
   public BoundSql getBoundSql(Object parameterObject) {
+
+    /**
+     * 调用 sqlSource 的 getBoundSql 获取 BoundSql
+     *
+     * 【补充】
+     * SqlSource 是一个接口，它有如下几个实现类：
+     * DynamicSqlSource --> 最常用且最复杂
+     * RawSqlSource
+     * StaticSqlSource
+     * ProviderSqlSource
+     * VelocitySqlSource
+     *
+     * 见【DynamicSqlSource】实现
+     */
     BoundSql boundSql = sqlSource.getBoundSql(parameterObject);
+
     List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
+
     if (parameterMappings == null || parameterMappings.isEmpty()) {
+      /**
+       * 创建新的 BoundSql，这里的 parameterMap 是 ParameterMap 类型。
+       * 由<ParameterMap> 节点进行配置，该节点已经废弃，不推荐使用。默认情况下，
+       * parameterMap.getParameterMappings() 返回空集合
+       */
       boundSql = new BoundSql(configuration, boundSql.getSql(), parameterMap.getParameterMappings(), parameterObject);
     }
 

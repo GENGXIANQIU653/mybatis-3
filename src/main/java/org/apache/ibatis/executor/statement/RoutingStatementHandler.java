@@ -76,6 +76,7 @@ public class RoutingStatementHandler implements StatementHandler {
 
   @Override
   public <E> List<E> query(Statement statement, ResultHandler resultHandler) throws SQLException {
+    // 通常调用【PreparedStatementHandler.query】
     return delegate.query(statement, resultHandler);
   }
 

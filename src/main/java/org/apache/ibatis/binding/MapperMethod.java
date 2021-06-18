@@ -68,6 +68,9 @@ public class MapperMethod {
   /**
    * 路由
    * 根据解析结果，路由到恰当的SqlSession方法上
+   *
+   * execute() 方法主要由一个 switch 语句组成，用于根据 SQL 类型执行相应的数据库操作
+   *
    * @param sqlSession
    * @param args
    * @return
@@ -79,7 +82,9 @@ public class MapperMethod {
     // 根据 SQL 类型执行相应的数据库操作
     switch (command.getType()) {
       case INSERT: {
-        // 转换参数
+        /**
+         * 转换参数(在多处被调用)，见detail
+         */
         Object param = method.convertArgsToSqlCommandParam(args);
         // 执行插入操作，rowCountResult 方法用于处理返回值
         result = rowCountResult(sqlSession.insert(command.getName(), param));
@@ -129,7 +134,7 @@ public class MapperMethod {
         else {
           // 转换参数
           Object param = method.convertArgsToSqlCommandParam(args);
-          // 查询单条
+          // 查询单条，见detail
           result = sqlSession.selectOne(command.getName(), param);
           if (method.returnsOptional()
               && (result == null || !method.getReturnType().equals(result.getClass()))) {
