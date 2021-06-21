@@ -682,9 +682,30 @@ public class Configuration {
     return resultSetHandler;
   }
 
-  public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
+  /**
+   * newStatementHandler 方法在创建 StatementHandler 之后，还会应用插件到 StatementHandler 上。
+   * 关于 MyBatis 的插件机制，后面独立成文进行讲解
+   *
+   * @param executor
+   * @param mappedStatement
+   * @param parameterObject
+   * @param rowBounds
+   * @param resultHandler
+   * @param boundSql
+   * @return
+   */
+  public StatementHandler newStatementHandler(Executor executor,
+                                              MappedStatement mappedStatement,
+                                              Object parameterObject,
+                                              RowBounds rowBounds,
+                                              ResultHandler resultHandler,
+                                              BoundSql boundSql) {
+    // 创建具有路由功能的 StatementHandler
     StatementHandler statementHandler = new RoutingStatementHandler(executor, mappedStatement, parameterObject, rowBounds, resultHandler, boundSql);
+
+    // 应用插件到 StatementHandler 上
     statementHandler = (StatementHandler) interceptorChain.pluginAll(statementHandler);
+
     return statementHandler;
   }
 

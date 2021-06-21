@@ -97,6 +97,7 @@ class AutoMappingUnknownColumnBehaviorTest {
         TransactionFactory transactionFactory = new JdbcTransactionFactory();
         Environment environment = new Environment("Production", transactionFactory, dataSource);
         Configuration configuration = new Configuration(environment);
+        // 加载 Mapper 映射配置文件
         configuration.addMapper(Mapper.class);
         sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
     }

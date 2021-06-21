@@ -55,6 +55,8 @@ public class DefaultSqlSessionFactory implements SqlSessionFactory {
 
     /**
      * 调用 #openSessionFromDataSource() 方法，获得 SqlSession 对象
+     *
+     * configuration.getDefaultExecutorType()== SIMPLE
      */
     return openSessionFromDataSource(configuration.getDefaultExecutorType(), null, false);
   }

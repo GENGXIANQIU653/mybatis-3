@@ -100,6 +100,10 @@ public class MapperRegistry {
          * MapperAnnotationBuilder -- Mapper 注解构造器，负责解析 Mapper 接口上的注解
          */
         MapperAnnotationBuilder parser = new MapperAnnotationBuilder(config, type);
+
+        /**
+         * 【核心】
+         */
         parser.parse();
 
         // 标记加载完成

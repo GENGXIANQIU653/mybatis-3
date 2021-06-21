@@ -165,7 +165,11 @@ public class MapperProxy<T> implements InvocationHandler, Serializable {
     Object invoke(Object proxy, Method method, Object[] args, SqlSession sqlSession) throws Throwable;
   }
 
+  /**
+   * PlainMethodInvoker 是 MapperProxy 的内部类
+   */
   private static class PlainMethodInvoker implements MapperMethodInvoker {
+
     private final MapperMethod mapperMethod;
 
     public PlainMethodInvoker(MapperMethod mapperMethod) {

@@ -293,7 +293,8 @@ public class DefaultSqlSession implements SqlSession {
        * <2> 调用 Executor 实现类中的 query 方法，执行查询
        *
        * 这里要来说说 executor 变量，该变量类型为 Executor。Executor 是一个接口，它的实现类包括【CachingExecutor】、BaseExecutor
-       * 【SimpleExecutor、ReuseExecutor、BatchExecutor、ClosedExecutor】
+       *
+       *  而 BaseExecutor 的子类 包括:【SimpleExecutor、ReuseExecutor、BatchExecutor、ClosedExecutor】
        *
        * 默认情况下，executor 的类型为 【CachingExecutor】，该类是一个装饰器类，用于给目标 Executor 增加二级缓存功能。
        * 那目标 Executor 是谁呢？默认情况下是 【SimpleExecutor】

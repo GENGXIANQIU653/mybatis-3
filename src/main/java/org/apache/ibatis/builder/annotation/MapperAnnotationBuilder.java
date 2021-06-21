@@ -438,7 +438,6 @@ public class MapperAnnotationBuilder {
           sqlCommandType,
           fetchSize,
           timeout,
-          // ParameterMapID
           null,
           parameterTypeClass,
           resultMapId,
@@ -446,14 +445,12 @@ public class MapperAnnotationBuilder {
           resultSetType,
           flushCache,
           useCache,
-          // TODO gcode issue #577
           false,
           keyGenerator,
           keyProperty,
           keyColumn,
           statementAnnotation.getDatabaseId(),
           languageDriver,
-          // ResultSets
           options != null ? nullOrEmpty(options.resultSets()) : null);
     });
   }
@@ -722,8 +719,9 @@ public class MapperAnnotationBuilder {
     return new ProviderSqlSource(assistant.getConfiguration(), annotation, type, method);
   }
 
-  private SqlSource buildSqlSourceFromStrings(String[] strings, Class<?> parameterTypeClass,
-      LanguageDriver languageDriver) {
+  private SqlSource buildSqlSourceFromStrings(String[] strings,
+                                              Class<?> parameterTypeClass,
+                                              LanguageDriver languageDriver) {
     return languageDriver.createSqlSource(configuration, String.join(" ", strings).trim(), parameterTypeClass);
   }
 

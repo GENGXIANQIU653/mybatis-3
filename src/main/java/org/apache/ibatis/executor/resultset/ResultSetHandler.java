@@ -24,6 +24,9 @@ import org.apache.ibatis.cursor.Cursor;
 
 /**
  * @author Clinton Begin
+ *
+ * ResultSetHandler 是一个接口，它只有一个实现类 DefaultResultSetHandler
+ *
  */
 public interface ResultSetHandler {
 

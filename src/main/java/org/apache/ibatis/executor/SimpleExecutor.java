@@ -102,10 +102,24 @@ public class SimpleExecutor extends BaseExecutor {
     return Collections.emptyList();
   }
 
+
+  /**
+   * Statement 的创建入口
+   * @param handler
+   * @param statementLog
+   * @return
+   * @throws SQLException
+   */
   private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
     Statement stmt;
+
+    // 1、获取数据库连接
     Connection connection = getConnection(statementLog);
+
+    // 2、创建 Statement
     stmt = handler.prepare(connection, transaction.getTimeout());
+
+    // 3、为 Statement 设置 IN 参数
     handler.parameterize(stmt);
     return stmt;
   }

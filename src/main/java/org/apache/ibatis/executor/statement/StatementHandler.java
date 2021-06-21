@@ -27,6 +27,14 @@ import org.apache.ibatis.session.ResultHandler;
 
 /**
  * @author Clinton Begin
+ *
+ * StatementHandler 是一个非常核心接口。
+ * 之所以说它核心，是因为从代码分层的角度来说，StatementHandler 是 MyBatis 源码的边界，再往下层就是 JDBC 层面的接口
+ *
+ * StatementHandler 实现类有:【RoutingStatementHandler】、【BaseStatementHandler】
+ *
+ * BaseStatementHandler的子类包括:【SimpleStatementHandler】、【CallableStatementHandler】、【PreparedStatementHandler】
+ *
  */
 public interface StatementHandler {
 
