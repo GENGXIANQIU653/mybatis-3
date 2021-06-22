@@ -25,11 +25,23 @@ import org.apache.ibatis.cache.CacheException;
  * @author Clinton Begin
  *
  * 永不过期的 Cache 实现类，基于 HashMap 实现类
+ *
+ * PerpetualCache -- 基本缓存功能
+ *
+ * 需要特别说明的是，MyBatis 在实现缓存模块的过程中，使用了装饰模式。
+ * 在以上几种缓存实现类中，PerpetualCache 相当于装饰模式中的 ConcreteComponent。
+ * LruCache、SynchronizedCache 和 BlockingCache 等相当于装饰模式中的 ConcreteDecorator
  */
 public class PerpetualCache implements Cache {
 
+  /**
+   * 标识
+   */
   private final String id;
 
+  /**
+   * 缓存容器
+   */
   private final Map<Object, Object> cache = new HashMap<>();
 
   public PerpetualCache(String id) {
@@ -48,16 +60,19 @@ public class PerpetualCache implements Cache {
 
   @Override
   public void putObject(Object key, Object value) {
+    // 存储键值对到 HashMap
     cache.put(key, value);
   }
 
   @Override
   public Object getObject(Object key) {
+    // 查找缓存项
     return cache.get(key);
   }
 
   @Override
   public Object removeObject(Object key) {
+    // 移除缓存项
     return cache.remove(key);
   }
 

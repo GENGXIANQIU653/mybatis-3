@@ -29,15 +29,26 @@ import org.apache.ibatis.cache.CacheException;
  * It sets a lock over a cache key when the element is not found in cache.
  * This way, other threads will wait until this element is filled instead of hitting the database.
  *
- * <p>By its nature, this implementation can cause deadlock when used incorrecly.
- *
  * @author Eduardo Macarron
+ *
+ * 具备阻塞功能的缓存，该特性是基于 Java 重入锁实现的。同一时刻下，BlockingCache 仅允许一个线程访问指定 key 的缓存项，其他线程将会被阻塞住
  *
  */
 public class BlockingCache implements Cache {
 
+  /**
+   * 阻塞等待超时时间
+   */
   private long timeout;
+
+  /**
+   * 装饰的 Cache 对象
+   */
   private final Cache delegate;
+
+  /**
+   * 缓存键与 CountDownLatch 对象的映射
+   */
   private final ConcurrentHashMap<Object, CountDownLatch> locks;
 
   public BlockingCache(Cache delegate) {
@@ -58,17 +69,25 @@ public class BlockingCache implements Cache {
   @Override
   public void putObject(Object key, Object value) {
     try {
+      // 存储缓存项
       delegate.putObject(key, value);
     } finally {
+      // 释放锁
       releaseLock(key);
     }
   }
 
   @Override
   public Object getObject(Object key) {
+    // 请求锁
     acquireLock(key);
     Object value = delegate.getObject(key);
+    /**
+     * 若缓存命中，则释放锁。需要注意的是，未命中则不释放锁(即阻塞)
+     * 为什么这么有这样的设计呢？因为当线程 A 在获取不到缓存值时，一般会去设置对应的缓存值，这样就避免其他也需要该缓存的线程 B、C 等，重复添加缓存
+     */
     if (value != null) {
+      // 释放锁
       releaseLock(key);
     }
     return value;
@@ -76,7 +95,7 @@ public class BlockingCache implements Cache {
 
   @Override
   public Object removeObject(Object key) {
-    // despite of its name, this method is called only to release locks
+    // 释放锁
     releaseLock(key);
     return null;
   }

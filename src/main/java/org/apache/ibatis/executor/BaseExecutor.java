@@ -55,8 +55,15 @@ public abstract class BaseExecutor implements Executor {
   protected Executor wrapper;
 
   protected ConcurrentLinkedQueue<DeferredLoad> deferredLoads;
+
+  /**
+   * 一级缓存的类型为 PerpetualCache，没有被其他缓存类装饰过。
+   * 一级缓存所存储从查询结果会在 MyBatis 执行更新操作（INSERT/UPDATE/DELETE），以及提交和回滚事务时被清空
+   */
   protected PerpetualCache localCache;
+
   protected PerpetualCache localOutputParameterCache;
+
   protected Configuration configuration;
 
   protected int queryStack;
@@ -131,10 +138,15 @@ public abstract class BaseExecutor implements Executor {
 
   @Override
   public <E> List<E> query(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler) throws SQLException {
+
     // 获取 BoundSql
     BoundSql boundSql = ms.getBoundSql(parameter);
-    // 创建 CacheKey
+
+    /**
+     * 创建 CacheKey
+     */
     CacheKey key = createCacheKey(ms, parameter, rowBounds, boundSql);
+
     // 调用重载方法
     return query(ms, parameter, rowBounds, resultHandler, key, boundSql);
   }
@@ -157,19 +169,26 @@ public abstract class BaseExecutor implements Executor {
     }
     List<E> list;
     try {
+
       queryStack++;
       /**
        * 从一级缓存中获取缓存项
        */
       list = resultHandler == null ? (List<E>) localCache.getObject(key) : null;
+
+      /**
+       * 命中缓存
+       */
       if (list != null) {
+        // 存储过程相关逻辑，忽略
         handleLocallyCachedOutputParameters(ms, key, parameter, boundSql);
       } else {
         /**
-         * 一级缓存未命中，则从数据库中查询
+         * 【重要】一级缓存未命中，则从数据库中查询，并将查询结果写入缓存中
          */
         list = queryFromDatabase(ms, parameter, rowBounds, resultHandler, key, boundSql);
       }
+
     } finally {
       queryStack--;
     }
@@ -208,22 +227,42 @@ public abstract class BaseExecutor implements Executor {
     }
   }
 
+  /**
+   * 创建cacheKey
+   * @param ms
+   * @param parameterObject
+   * @param rowBounds
+   * @param boundSql
+   * @return
+   */
   @Override
   public CacheKey createCacheKey(MappedStatement ms, Object parameterObject, RowBounds rowBounds, BoundSql boundSql) {
     if (closed) {
       throw new ExecutorException("Executor was closed.");
     }
+    // 创建 CacheKey 对象
     CacheKey cacheKey = new CacheKey();
+
+    // 将 MappedStatement 的 id 作为影响因子进行计算
     cacheKey.update(ms.getId());
+    // RowBounds 用于分页查询，下面将它的两个字段作为影响因子进行计算
     cacheKey.update(rowBounds.getOffset());
     cacheKey.update(rowBounds.getLimit());
+    // 获取 sql 语句，并进行计算
     cacheKey.update(boundSql.getSql());
+
+    // ParameterMapping
     List<ParameterMapping> parameterMappings = boundSql.getParameterMappings();
+
+    // TypeHandlerRegistry
     TypeHandlerRegistry typeHandlerRegistry = ms.getConfiguration().getTypeHandlerRegistry();
-    // mimic DefaultParameterHandler logic
+
     for (ParameterMapping parameterMapping : parameterMappings) {
       if (parameterMapping.getMode() != ParameterMode.OUT) {
+        // 运行时参数
         Object value;
+        // 当前大段代码用于获取 SQL 中的占位符 #{xxx} 对应的运行时参数，
+        // 前文有类似分析，这里忽略了
         String propertyName = parameterMapping.getProperty();
         if (boundSql.hasAdditionalParameter(propertyName)) {
           value = boundSql.getAdditionalParameter(propertyName);
@@ -235,11 +274,12 @@ public abstract class BaseExecutor implements Executor {
           MetaObject metaObject = configuration.newMetaObject(parameterObject);
           value = metaObject.getValue(propertyName);
         }
+        // 让运行时参数参与计算
         cacheKey.update(value);
       }
     }
     if (configuration.getEnvironment() != null) {
-      // issue #176
+      // 获取 Environment id，并让其参与计算
       cacheKey.update(configuration.getEnvironment().getId());
     }
     return cacheKey;
@@ -347,22 +387,31 @@ public abstract class BaseExecutor implements Executor {
    * @return
    * @throws SQLException
    */
-  private <E> List<E> queryFromDatabase(MappedStatement ms, Object parameter, RowBounds rowBounds, ResultHandler resultHandler, CacheKey key, BoundSql boundSql) throws SQLException {
+  private <E> List<E> queryFromDatabase(MappedStatement ms,
+                                        Object parameter,
+                                        RowBounds rowBounds,
+                                        ResultHandler resultHandler,
+                                        CacheKey key, BoundSql boundSql) throws SQLException {
+
     List<E> list;
-    // 向缓存中存储一个占位符
+
+    // 1.向缓存中存储一个占位符
     localCache.putObject(key, EXECUTION_PLACEHOLDER);
 
     try {
       /**
-       * 调用 doQuery 进行查询，见【simpleExecutor】
+       * 2.查询数据库，调用 doQuery 进行查询，见【simpleExecutor】
        */
       list = doQuery(ms, parameter, rowBounds, resultHandler, boundSql);
+
     } finally {
-      // 移除占位符
+      // 3.移除占位符
       localCache.removeObject(key);
     }
-    // 缓存查询结果
+    // 4.缓存查询结果
     localCache.putObject(key, list);
+
+    // 存储过程相关逻辑，忽略
     if (ms.getStatementType() == StatementType.CALLABLE) {
       localOutputParameterCache.putObject(key, parameter);
     }

@@ -51,6 +51,8 @@ public interface Cache {
    *          Can be any object but usually it is a {@link CacheKey}
    * @param value
    *          The result of a select.
+   *
+   *          添加指定键的值
    */
   void putObject(Object key, Object value);
 
@@ -58,6 +60,8 @@ public interface Cache {
    * @param key
    *          The key
    * @return The object stored in the cache.
+   *
+   * 获得指定键的值
    */
   Object getObject(Object key);
 
@@ -75,15 +79,22 @@ public interface Cache {
    * @param key
    *          The key
    * @return Not used
+   *
+   * 移除指定键的值
    */
   Object removeObject(Object key);
 
   /**
    * Clears this cache instance.
+   *
+   * 清空缓存
    */
   void clear();
 
   /**
+   *
+   * 获得容器中缓存的数量
+   *
    * Optional. This method is not called by the core.
    *
    * @return The number of elements stored in the cache (not its capacity).

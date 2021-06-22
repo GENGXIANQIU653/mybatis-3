@@ -141,7 +141,12 @@ public class CachingExecutor implements Executor {
                            CacheKey key,
                            BoundSql boundSql) throws SQLException {
 
-    // 从 MappedStatement 中获取缓存
+    /**
+     * 从 MappedStatement 中获取 Cache，注意这里的 Cache 并非是在 CachingExecutor 中创建的
+     *
+     * 注意二级缓存是从 MappedStatement 中获取的，而非由 CachingExecutor 创建。
+     * 由于 MappedStatement 存在于全局配置中，可以多个 CachingExecutor 获取到，这样就会出现线程安全问题
+     */
     Cache cache = ms.getCache();
 
     // 若映射文件中未配置缓存或参照缓存，此时 cache = null
@@ -153,14 +158,25 @@ public class CachingExecutor implements Executor {
 
         ensureNoOutParams(ms, boundSql);
 
+        /**
+         * 访问二级缓存
+         */
         @SuppressWarnings("unchecked")
         List<E> list = (List<E>) tcm.getObject(cache, key);
 
+        // 缓存未命中
         if (list == null) {
           /**
-           * 若缓存未命中，则调用被装饰类的 query 方法
+           * 向一级缓存或者数据库进行查询
            */
-          list = delegate.query(ms, parameterObject, rowBounds, resultHandler, key, boundSql);
+          list = delegate.query(ms,
+            parameterObject,
+            rowBounds,
+            null,
+            key,
+            boundSql);
+
+          // 缓存查询结果
           tcm.putObject(cache, key, list);
         }
         return list;
