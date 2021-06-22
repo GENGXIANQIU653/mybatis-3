@@ -35,14 +35,26 @@ import org.apache.ibatis.transaction.Transaction;
 /**
  * @author Clinton Begin
  * @author Eduardo Macarron
+ *
+ * 实现 Executor 接口，支持二级缓存的 Executor 的实现类
  */
 public class CachingExecutor implements Executor {
 
+  /**
+   * 被委托的 Executor 对象
+   */
   private final Executor delegate;
+
+  /**
+   * TransactionalCacheManager 对象，支持事务的缓存管理器。
+   * 因为二级缓存是支持跨 Session 进行共享，此处需要考虑事务，那么，必然需要做到事务提交时，才将当前事务中查询时产生的缓存，同步到二级缓存中。
+   * 这个功能，就通过 TransactionalCacheManager 来实现
+   */
   private final TransactionalCacheManager tcm = new TransactionalCacheManager();
 
   public CachingExecutor(Executor delegate) {
     this.delegate = delegate;
+    // <2> 设置 delegate 被当前执行器所包装
     delegate.setExecutorWrapper(this);
   }
 
@@ -160,6 +172,7 @@ public class CachingExecutor implements Executor {
 
         /**
          * 访问二级缓存
+         * 调用 TransactionalCacheManager#getObject(Cache cache, CacheKey key) 方法，从二级缓存中，获取结果
          */
         @SuppressWarnings("unchecked")
         List<E> list = (List<E>) tcm.getObject(cache, key);
@@ -176,7 +189,10 @@ public class CachingExecutor implements Executor {
             key,
             boundSql);
 
-          // 缓存查询结果
+          /**
+           * 缓存查询结果
+           * 调用 TransactionalCacheManager#put(Cache cache, CacheKey key, Object value) 方法，缓存结果到二级缓存中
+           */
           tcm.putObject(cache, key, list);
         }
         return list;
@@ -194,18 +210,32 @@ public class CachingExecutor implements Executor {
     return delegate.flushStatements();
   }
 
+  /**
+   * delegate 和 tcm 先后提交
+   * @param required
+   * @throws SQLException
+   */
   @Override
   public void commit(boolean required) throws SQLException {
+    // 执行 delegate 对应的方法
     delegate.commit(required);
+    // 提交 TransactionalCacheManager
     tcm.commit();
   }
 
+  /**
+   * delegate 和 tcm 先后回滚
+   * @param required
+   * @throws SQLException
+   */
   @Override
   public void rollback(boolean required) throws SQLException {
     try {
+      // 执行 delegate 对应的方法
       delegate.rollback(required);
     } finally {
       if (required) {
+        // 回滚 TransactionalCacheManager
         tcm.rollback();
       }
     }

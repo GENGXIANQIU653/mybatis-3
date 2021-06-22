@@ -27,17 +27,39 @@ import org.apache.ibatis.cache.decorators.TransactionalCache;
  */
 public class TransactionalCacheManager {
 
+  /**
+   * Cache 和 TransactionalCache 的映射
+   *
+   * transactionalCaches是一个使用 Cache 作为 KEY ，TransactionalCache 作为 VALUE 的 Map 对象
+   * 为什么是一个 Map 对象呢？因为在一次的事务过程中，可能有多个不同的 MappedStatement 操作，而它们可能对应多个 Cache 对象
+   */
   private final Map<Cache, TransactionalCache> transactionalCaches = new HashMap<>();
 
   public void clear(Cache cache) {
     getTransactionalCache(cache).clear();
   }
 
+  /**
+   * 获得缓存中，指定 Cache + K 的值
+   * @param cache
+   * @param key
+   * @return
+   */
   public Object getObject(Cache cache, CacheKey key) {
+    // 首先，获得 Cache 对应的 TransactionalCache 对象
+    // 然后从 TransactionalCache 对象中，获得 key 对应的值
     return getTransactionalCache(cache).getObject(key);
   }
 
+  /**
+   * 添加 Cache + KV ，到缓存中
+   * @param cache
+   * @param key
+   * @param value
+   */
   public void putObject(Cache cache, CacheKey key, Object value) {
+    // 首先，获得 Cache 对应的 TransactionalCache 对象
+    // 然后，添加 KV 到 TransactionalCache 对象中
     getTransactionalCache(cache).putObject(key, value);
   }
 
@@ -53,7 +75,16 @@ public class TransactionalCacheManager {
     }
   }
 
+  /**
+   * TransactionalCache 的创建
+   * @param cache
+   * @return
+   */
   private TransactionalCache getTransactionalCache(Cache cache) {
+    /**
+     * 优先，从 transactionalCaches 获得 Cache 对象，对应的 TransactionalCache 对象。
+     * 如果不存在，则创建一个 TransactionalCache 对象，并添加到 transactionalCaches 中
+     */
     return transactionalCaches.computeIfAbsent(cache, TransactionalCache::new);
   }
 

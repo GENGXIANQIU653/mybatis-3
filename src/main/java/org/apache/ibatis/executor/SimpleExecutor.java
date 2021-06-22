@@ -33,9 +33,20 @@ import org.apache.ibatis.transaction.Transaction;
 
 /**
  * @author Clinton Begin
+ *
+ * 继承 BaseExecutor 抽象类，简单的 Executor 实现类
+ *
+ * 每次开始读或写操作，都创建对应的 Statement 对象。
+ * 执行完成后，关闭该 Statement 对象
+ *
  */
 public class SimpleExecutor extends BaseExecutor {
 
+  /**
+   * 构造函数
+   * @param configuration
+   * @param transaction
+   */
   public SimpleExecutor(Configuration configuration, Transaction transaction) {
     super(configuration, transaction);
   }
@@ -70,10 +81,14 @@ public class SimpleExecutor extends BaseExecutor {
     try {
       Configuration configuration = ms.getConfiguration();
 
-      // 创建 StatementHandler
+      /**
+       * 【重要】创建 StatementHandler，见detail
+       */
       StatementHandler handler = configuration.newStatementHandler(wrapper, ms, parameter, rowBounds, resultHandler, boundSql);
 
-      // 创建 Statement
+      /**
+       * 【重要】创建 Statement，见detail
+       */
       stmt = prepareStatement(handler, ms.getStatementLog());
 
       /**
@@ -116,10 +131,14 @@ public class SimpleExecutor extends BaseExecutor {
     // 1、获取数据库连接
     Connection connection = getConnection(statementLog);
 
-    // 2、创建 Statement
+    /**
+     * 2、创建 Statement
+     */
     stmt = handler.prepare(connection, transaction.getTimeout());
 
-    // 3、为 Statement 设置 IN 参数
+    /**
+     * 3. 为 Statement 设置 IN 参数，即设置运行时参数
+     */
     handler.parameterize(stmt);
     return stmt;
   }

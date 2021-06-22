@@ -25,23 +25,36 @@ import org.apache.ibatis.logging.Log;
 import org.apache.ibatis.logging.LogFactory;
 
 /**
- * The 2nd level cache transactional buffer.
- * <p>
- * This class holds all cache entries that are to be added to the 2nd level cache during a Session.
- * Entries are sent to the cache when commit is called or discarded if the Session is rolled back.
- * Blocking cache support has been added. Therefore any get() that returns a cache miss
- * will be followed by a put() so any lock associated with the key can be released.
- *
- * @author Clinton Begin
- * @author Eduardo Macarron
+ * @author 123
+ * 实现 Cache 接口，支持事务的 Cache 实现类，主要用于二级缓存中
  */
 public class TransactionalCache implements Cache {
 
   private static final Log log = LogFactory.getLog(TransactionalCache.class);
 
+  /**
+   * 委托的 Cache 对象。
+   *
+   * 实际上，就是二级缓存 Cache 对象。
+   */
   private final Cache delegate;
+
+  /**
+   * 提交时，清空 {@link #delegate}
+   *
+   * 初始时，该值为 false
+   * 清理后{@link #clear()} 时，该值为 true ，表示持续处于清空状态
+   */
   private boolean clearOnCommit;
+
+  /**
+   * 待提交的 KV 映射
+   */
   private final Map<Object, Object> entriesToAddOnCommit;
+
+  /**
+   * 查找不到的 KEY 集合
+   */
   private final Set<Object> entriesMissedInCache;
 
   public TransactionalCache(Cache delegate) {
