@@ -389,6 +389,7 @@ public class DefaultSqlSession implements SqlSession {
   public void commit(boolean force) {
     try {
       // 提交事务,isCommitOrRollbackRequired
+      // 因为我们使用了CachingExecutor，首先会进入CachingExecutor实现的commit方法
       executor.commit(isCommitOrRollbackRequired(force));
       // 标记 dirty 为 false
       dirty = false;

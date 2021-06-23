@@ -65,6 +65,9 @@ public class TransactionalCacheManager {
 
   public void commit() {
     for (TransactionalCache txCache : transactionalCaches.values()) {
+      /**
+       * 调用TransactionalCache.commit()
+       */
       txCache.commit();
     }
   }

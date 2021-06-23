@@ -164,6 +164,7 @@ public class CachingExecutor implements Executor {
     // 若映射文件中未配置缓存或参照缓存，此时 cache = null
     if (cache != null) {
 
+      // 刷新缓存
       flushCacheIfRequired(ms);
 
       if (ms.isUseCache() && resultHandler == null) {
@@ -192,6 +193,7 @@ public class CachingExecutor implements Executor {
           /**
            * 缓存查询结果
            * 调用 TransactionalCacheManager#put(Cache cache, CacheKey key, Object value) 方法，缓存结果到二级缓存中
+           * tcm的put方法也不是直接操作缓存，只是在把这次的数据和key放入待提交的Map中
            */
           tcm.putObject(cache, key, list);
         }
@@ -212,6 +214,9 @@ public class CachingExecutor implements Executor {
 
   /**
    * delegate 和 tcm 先后提交
+   *
+   * 会把具体commit的职责委托给包装的Executor。
+   * 主要是看下tcm.commit()，tcm最终又会调用到TransactionalCache
    * @param required
    * @throws SQLException
    */

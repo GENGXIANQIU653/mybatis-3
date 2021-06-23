@@ -76,21 +76,35 @@ public class TransactionalCache implements Cache {
 
   @Override
   public Object getObject(Object key) {
-    // issue #116
+    // <1> 从 委托的 Cache 对象 delegate 中获取 key 对应的 value
     Object object = delegate.getObject(key);
+    // <2> 如果不存在，则添加到 entriesMissedInCache 中
     if (object == null) {
       entriesMissedInCache.add(key);
     }
-    // issue #146
+    // <3> 如果 clearOnCommit 为 true ，表示处于持续清空状态，则返回 null
+    /**
+     * 因为在事务未结束前，我们执行的清空缓存操作不好同步到 delegate 中，所以只好通过 clearOnCommit 来标记处于清空状态。
+     * 那么，如果处于该状态，自然就不能返回 delegate 中查找的结果
+     */
     if (clearOnCommit) {
       return null;
-    } else {
+    }
+    // <4> 返回 value
+    else {
       return object;
     }
   }
 
+  /**
+   * 暂存 KV 到 entriesToAddOnCommit 中
+   * @param key
+   *          Can be any object but usually it is a CacheKey
+   * @param object
+   */
   @Override
   public void putObject(Object key, Object object) {
+    // 添加到 map 中
     entriesToAddOnCommit.put(key, object);
   }
 
@@ -99,17 +113,30 @@ public class TransactionalCache implements Cache {
     return null;
   }
 
+  /**
+   * 清空缓存
+   */
   @Override
   public void clear() {
+    // 设定提交时清空缓存
     clearOnCommit = true;
+    // 清空需要在提交时加入缓存的列表
     entriesToAddOnCommit.clear();
   }
 
+  /**
+   * 提交事务，重头戏
+   */
   public void commit() {
+    // <1> 如果 clearOnCommit 为 true ，则清空 delegate 缓存
     if (clearOnCommit) {
       delegate.clear();
     }
+    /**
+     * <2> 将 entriesToAddOnCommit、entriesMissedInCache 刷入 delegate，见detail
+     */
     flushPendingEntries();
+
     reset();
   }
 
@@ -124,10 +151,17 @@ public class TransactionalCache implements Cache {
     entriesMissedInCache.clear();
   }
 
+  /**
+   * 在flushPendingEntries中，将待提交的Map进行循环处理，委托给包装的Cache类，进行putObject的操作
+   */
   private void flushPendingEntries() {
+
+    // 将 entriesToAddOnCommit 刷入 delegate 中
     for (Map.Entry<Object, Object> entry : entriesToAddOnCommit.entrySet()) {
       delegate.putObject(entry.getKey(), entry.getValue());
     }
+
+    // 将 entriesMissedInCache 刷入 delegate 中
     for (Object entry : entriesMissedInCache) {
       if (!entriesToAddOnCommit.containsKey(entry)) {
         delegate.putObject(entry, null);
