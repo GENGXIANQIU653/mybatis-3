@@ -147,6 +147,10 @@ public class Configuration {
   protected Class<?> configurationFactory;
 
   protected final MapperRegistry mapperRegistry = new MapperRegistry(this);
+
+  /**
+   * 拦截器 Interceptor 链
+   */
   protected final InterceptorChain interceptorChain = new InterceptorChain();
   protected final TypeHandlerRegistry typeHandlerRegistry = new TypeHandlerRegistry(this);
   protected final TypeAliasRegistry typeAliasRegistry = new TypeAliasRegistry();
@@ -719,15 +723,27 @@ public class Configuration {
     return newExecutor(transaction, defaultExecutorType);
   }
 
+  /**
+   * 创建 executor
+   * @param transaction
+   * @param executorType
+   * @return
+   */
   public Executor newExecutor(Transaction transaction, ExecutorType executorType) {
     executorType = executorType == null ? defaultExecutorType : executorType;
     executorType = executorType == null ? ExecutorType.SIMPLE : executorType;
     Executor executor;
+
+    // 根据 executorType 创建相应的 Executor 实例
     if (ExecutorType.BATCH == executorType) {
       executor = new BatchExecutor(this, transaction);
-    } else if (ExecutorType.REUSE == executorType) {
+    }
+
+    else if (ExecutorType.REUSE == executorType) {
       executor = new ReuseExecutor(this, transaction);
-    } else {
+    }
+
+    else {
       executor = new SimpleExecutor(this, transaction);
     }
     /**
@@ -736,6 +752,11 @@ public class Configuration {
     if (cacheEnabled) {
       executor = new CachingExecutor(executor);
     }
+
+    /**
+     * 植入插件，见detail
+     * newExecutor 方法在创建好 Executor 实例后，紧接着通过拦截器链 interceptorChain 为 Executor 实例植入代理逻辑
+     */
     executor = (Executor) interceptorChain.pluginAll(executor);
     return executor;
   }

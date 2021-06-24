@@ -287,7 +287,7 @@ public class XMLConfigBuilder extends BaseBuilder {
 
 
   /**
-   * 解析 <plugins /> 标签，添加到 Configuration#interceptorChain 中
+   * 解析 <plugins /> 标签，添加到 Configuration# interceptorChain 中
    * @param parent
    * @throws Exception
    */
@@ -297,10 +297,14 @@ public class XMLConfigBuilder extends BaseBuilder {
       for (XNode child : parent.getChildren()) {
         String interceptor = child.getStringAttribute("interceptor");
         Properties properties = child.getChildrenAsProperties();
-        // <1> 创建 Interceptor 对象，并设置属性
+        /**
+         *  <1> 创建 Interceptor 对象，并设置属性
+         */
         Interceptor interceptorInstance = (Interceptor) resolveClass(interceptor).getDeclaredConstructor().newInstance();
         interceptorInstance.setProperties(properties);
-        // <2> 添加到 configuration 中
+        /**
+         * <2> 添加到 configuration 中
+         */
         configuration.addInterceptor(interceptorInstance);
       }
     }

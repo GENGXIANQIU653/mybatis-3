@@ -25,28 +25,25 @@ import java.lang.annotation.Target;
  *
  * @see Intercepts
  * @author Clinton Begin
+ *
+ * 方法签名的注解
  */
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target({})
 public @interface Signature {
   /**
-   * Returns the java type.
-   *
-   * @return the java type
+   * @return 类
    */
   Class<?> type();
 
   /**
-   * Returns the method name.
-   *
-   * @return the method name
+   * @return 方法名
    */
   String method();
 
   /**
-   * Returns java types for method argument.
-   * @return java types for method argument
+   * @return 参数类型
    */
   Class<?>[] args();
 }

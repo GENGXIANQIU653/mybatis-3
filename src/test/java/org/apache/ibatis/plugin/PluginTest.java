@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 import org.junit.jupiter.api.Test;
 
@@ -38,12 +39,42 @@ class PluginTest {
     assertNotEquals("Always", map.toString());
   }
 
+  /**
+   *
+   * 插件类
+   *
+   * <1> 处通过 @Intercepts 和 @Signature 注解，定义了需要拦截的方法为 Map 类型、方法为 "get" 方法，方法参数为 Object.class
+   */
   @Intercepts({
-      @Signature(type = Map.class, method = "get", args = {Object.class})})
+      @Signature(type = Map.class,
+        method = "get",
+        args = {Object.class}
+        )
+  }) // <1>
   public static class AlwaysMapPlugin implements Interceptor {
-    @Override
+
+    /**
+     * 在实现方法 #intercept(Invocation invocation) 方法，直接返回 "Always" 字符串。也就是说，当所有的 target 类型为 Map 类型，并且调用 Map#get(Object) 方法时，返回的都是 "Always"
+     * @param invocation 调用信息
+     * @return
+     */
+    @Override // <4>
     public Object intercept(Invocation invocation) {
       return "Always";
+    }
+
+    /**
+     * 在实现方法 #plugin(Object target) 方法内部，调用 Plugin#wrap(Object target, Interceptor interceptor) 方法，执行代理对象的创建
+     * @param target 目标对象
+     * @return
+     */
+    @Override // <2>
+    public Object plugin(Object target) {
+      return Plugin.wrap(target, this);
+    }
+
+    // <3>
+    public void setProperties(Properties properties) {
     }
 
   }
